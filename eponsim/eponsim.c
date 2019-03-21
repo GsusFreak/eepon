@@ -45,7 +45,7 @@ FACILITY lambda[MAX_LAMBDAS];		/* each wavelength is modeled as a facility */
 double	lambdaFree[MAX_LAMBDAS];	/* array to keep track of lambda free times */
 double	lambdaFreeTemp[MAX_LAMBDAS];/* array to keep track of lambda free times (temp version) */
 
-double downstreamFree;              /* keeps track of availability of downstream channel (assumes only GATE messages) */
+double	downstreamFree;              /* keeps track of availability of downstream channel (assumes only GATE messages) */
 
 int		lambdaAssign[MAX_LAMBDAS];	/* array to keep track of lambda ONU assignments */
 
@@ -890,11 +890,11 @@ void heartbeat_with_timetrace()
 /* heartbeat process, so we know the simulation is still alive */
 void heartbeat()
 {
-	FILE *simCtrlFile;
+	FILE 	*simCtrlFile;
 	char	currToken[150];
-	int beat;
-	int beatCnt;
-    int loopIndex;
+	int 	beat;
+	int 	beatCnt;
+    int 	loopIndex;
 
 	create("heartbeat");
 	
@@ -1002,15 +1002,15 @@ void sim_ctrl()
         hold(0.1);
         while(table_cnt(overallQueueDelay) < 2000)
         {
-            hold(0.1);
+           hold(0.1);
         }
-        reset();
+       reset();
 
-        /* Estimation period */
+       /* Estimation period */
         hold(1);
         while(table_cnt(overallQueueDelay) < 20000)
         {
-            hold(1);
+           hold(1);
         }
     }
 
@@ -1113,10 +1113,12 @@ void sim()
 	/* Start heartbeat */
 	if(simParams.SIM_TRACE == SIM_TRACE_ON)
 	{
+		TSprint("heartbeat start (with timetrace)\n");
 		heartbeat_with_timetrace();
 	}
 	else
 	{
+		TSprint("heartbeat start (without timetrace)\n");
 		heartbeat();
 	}
 #endif
@@ -1143,12 +1145,12 @@ void sim()
 	if(simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON)
 	{
 		/* Initialize overall video queueing delay table */
-		overallVideoQueueDelay = table("Overall_Video_Queue_Delay");
 		overallVideoQueueDelay_MovingAverage = table("Moving_Average_of_the_Overall_Video_Queue_Delay");
 		table_moving_window(overallVideoQueueDelay_MovingAverage, simParams.SV_DROP_NUM_VALUES_FOR_MA);
-		unusedVideoGrant = table("Unused_Video_Grant");
-		videoReport = table("Video_Report");
 	}
+	overallVideoQueueDelay = table("Overall_Video_Queue_Delay");
+	unusedVideoGrant = table("Unused_Video_Grant");
+	videoReport = table("Video_Report");
 		
 	if(simType == ACTUAL_RUN)
 	{
@@ -1178,44 +1180,44 @@ void sim()
 
 
 	queueDelay = table("Queue_Delay");
-    	cycleQueueDelay = table("Cycle_Queue_Delay");
+	cycleQueueDelay = table("Cycle_Queue_Delay");
 	
 	/* Initialize Heavy ONU queueing delay table */
 	heavyQueueDelay = table("Heavy_ONU_Queue_Delay");
-    	table_confidence(heavyQueueDelay);
+	table_confidence(heavyQueueDelay);
 	
 	/* Initialize Light ONU queueing delay table */
 	lightQueueDelay = table("Light_ONU_Queue_Delay");
-    	table_confidence(lightQueueDelay);
+	table_confidence(lightQueueDelay);
 	
 	/* Initialize Preferred ONU queueing delay table */
 	preferQueueDelay = table("Preferred_ONU_Queue_Delay");
-    	table_confidence(preferQueueDelay);
+	table_confidence(preferQueueDelay);
 	
 	overallQueueLength = table("Overall_Queue_Length");
-    	table_confidence(overallQueueLength);
+	table_confidence(overallQueueLength);
 
-    	heavyQueueLength = table("Heavy_ONU_Queue_Length");
+	heavyQueueLength = table("Heavy_ONU_Queue_Length");
 	table_confidence(heavyQueueLength);
 
-    	lightQueueLength = table("Light_ONU_Queue_Length");
+	lightQueueLength = table("Light_ONU_Queue_Length");
 	table_confidence(lightQueueLength);
 
-    	preferQueueLength = table("Preferred_ONU_Queue_Length");
+	preferQueueLength = table("Preferred_ONU_Queue_Length");
 	table_confidence(preferQueueLength);
 	
 	overallGrantSize = table("Overall_Grant_Size");
 	table_confidence(overallGrantSize);
 
 	overallGrantSizePkt = table("Overall_Grant_Size_Pkt");
-    	if(simType == ACTUAL_RUN)
-    	{
-        	table_histogram(overallGrantSizePkt, 500, 0, overallGrantSizePktEst.maxEst);
-    	}
-    	else if(simType == TAIL_RUN)
-    	{
-        	table_histogram(overallGrantSizePkt, 500, overallGrantSizePktEst.minEst, overallGrantSizePktEst.maxEst);
-    	}
+	if(simType == ACTUAL_RUN)
+	{
+		table_histogram(overallGrantSizePkt, 500, 0, overallGrantSizePktEst.maxEst);
+	}
+	else if(simType == TAIL_RUN)
+	{
+		table_histogram(overallGrantSizePkt, 500, overallGrantSizePktEst.minEst, overallGrantSizePktEst.maxEst);
+	}
 	table_confidence(overallGrantSizePkt);
 
 	heavyGrantSize = table("Heavy_Grant_Size");
@@ -1224,15 +1226,15 @@ void sim()
 	lightGrantSize = table("Light_Grant_Size");
 	table_confidence(lightGrantSize);
 
-    	overallCycleLength = table("Overall_Grant_Cycle_Len");
-    	if(simType == ACTUAL_RUN)
-    	{
-        	table_histogram(overallCycleLength, 500, 0.0, overallQueueDelayEst.maxEst);
-    	}
-    	else if(simType == TAIL_RUN)
-    	{
-        	table_histogram(overallCycleLength, 500, overallQueueDelayEst.minEst, overallQueueDelayEst.maxEst);
-    	}
+	overallCycleLength = table("Overall_Grant_Cycle_Len");
+	if(simType == ACTUAL_RUN)
+	{
+		table_histogram(overallCycleLength, 500, 0.0, overallQueueDelayEst.maxEst);
+	}
+	else if(simType == TAIL_RUN)
+	{
+		table_histogram(overallCycleLength, 500, overallQueueDelayEst.minEst, overallQueueDelayEst.maxEst);
+	}
 	table_confidence(overallCycleLength);
 	if(simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR)
 	{
@@ -1240,95 +1242,95 @@ void sim()
 	}
 	else
 	{
-	table_run_length(overallCycleLength, 0.05, 0.90, 10000);
+		table_run_length(overallCycleLength, 0.05, 0.90, 10000);
 	}
 
-    	heavyCycleLength = table("Heavy_Grant_Cycle_Len");
+	heavyCycleLength = table("Heavy_Grant_Cycle_Len");
 	table_confidence(heavyCycleLength);
 
-    	lightCycleLength = table("Light_Grant_Cycle_Len");
+	lightCycleLength = table("Light_Grant_Cycle_Len");
 	table_confidence(lightCycleLength);
 
-    	preferCycleLength = table("Preferred_Grant_Cycle_Len");
+	preferCycleLength = table("Preferred_Grant_Cycle_Len");
 	table_confidence(preferCycleLength);
 
-    	overallRptToSchedTime = table("REPORT_to_Sched_Time");
+	overallRptToSchedTime = table("REPORT_to_Sched_Time");
 	table_confidence(overallRptToSchedTime);
-    	if(simParams.OLT_TYPE != OLT_ONLINE_NASC && simParams.OLT_TYPE != OLT_IPACT_PSF)
-    	{
-        	if(simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR)
-        	{
-        		table_run_length(overallRptToSchedTime, 0.01, 0.95, 10000);
-        	}
-        	else
-        	{
-            		table_run_length(overallRptToSchedTime, 0.05, 0.90, 10000);
-			}
-    	}
+	if(simParams.OLT_TYPE != OLT_ONLINE_NASC && simParams.OLT_TYPE != OLT_IPACT_PSF)
+	{
+		if(simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR)
+		{
+			table_run_length(overallRptToSchedTime, 0.01, 0.95, 10000);
+		}
+		else
+		{
+			table_run_length(overallRptToSchedTime, 0.05, 0.90, 10000);
+		}
+	}
 
-    	heavyRptToSchedTime = table("Heavy_REPORT_to_Sched_Time");
+	heavyRptToSchedTime = table("Heavy_REPORT_to_Sched_Time");
 	table_confidence(heavyRptToSchedTime);
 
 	lightRptToSchedTime = table("Light_REPORT_to_Sched_Time");
 	table_confidence(lightRptToSchedTime);
 
-    	overallRptToGateTime = table("REPORT_to_GATE_Time");
+	overallRptToGateTime = table("REPORT_to_GATE_Time");
 	table_confidence(overallRptToGateTime);
 	if(simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR)
 	{
 		table_run_length(overallRptToGateTime, 0.01, 0.95, 10000);
 	}
-    	else
-    	{
-			table_run_length(overallRptToGateTime, 0.01, 0.90, 10000);
-    	}
+	else
+	{
+		table_run_length(overallRptToGateTime, 0.01, 0.90, 10000);
+	}
 
-    	heavyRptToGateTime = table("Heavy_REPORT_to_GATE_Time");
+	heavyRptToGateTime = table("Heavy_REPORT_to_GATE_Time");
 	table_confidence(heavyRptToGateTime);
 
-    	lightRptToGateTime = table("Light_REPORT_to_GATE_Time");
+	lightRptToGateTime = table("Light_REPORT_to_GATE_Time");
 	table_confidence(lightRptToGateTime);
 
-    	numONUSched = table("Number_of_ONUs_Scheduled");
+	numONUSched = table("Number_of_ONUs_Scheduled");
 
-    	loadBalanceMeasure = table("Load_Balance");
+	loadBalanceMeasure = table("Load_Balance");
 
-    	schedRounds = table("Scheduling_Rounds");
+	schedRounds = table("Scheduling_Rounds");
 
-    	throughputFairness = table("Throughput_Fairness");
+	throughputFairness = table("Throughput_Fairness");
 
-    	compRatio1 = table("Competitive_Ratio_1");
-    	compRatio2 = table("Competitive_Ratio_2");
-    	minCompRatio = table("Min_Competitive_Ratio");
+	compRatio1 = table("Competitive_Ratio_1");
+	compRatio2 = table("Competitive_Ratio_2");
+	minCompRatio = table("Min_Competitive_Ratio");
 
-    	excessBandwidth = table("Excess_Bandwidth");
-    	excessBandwidthONU = table("Excess_Bandwidth_ONU");
+	excessBandwidth = table("Excess_Bandwidth");
+	excessBandwidthONU = table("Excess_Bandwidth_ONU");
 
-    	overallGrantRate = meter("Grant_Rate");
+	overallGrantRate = meter("Grant_Rate");
 	meter_confidence(overallGrantRate);
 
-    	heavyGrantRate = meter("Heavy_Grant_Rate");
+	heavyGrantRate = meter("Heavy_Grant_Rate");
 	meter_confidence(heavyGrantRate);
 
    	lightGrantRate = meter("Light_Grant_Rate");
 	meter_confidence(lightGrantRate);
 
-    	overallZeroReqRate = meter("Zero_Request_Rate");
+	overallZeroReqRate = meter("Zero_Request_Rate");
 	meter_confidence(overallZeroReqRate);
 
-    	heavyZeroReqRate = meter("Heavy_Zero_Request_Rate");
+	heavyZeroReqRate = meter("Heavy_Zero_Request_Rate");
 	meter_confidence(heavyZeroReqRate);
 
-    	lightZeroReqRate = meter("Light_Zero_Request_Rate");
+	lightZeroReqRate = meter("Light_Zero_Request_Rate");
 	meter_confidence(lightZeroReqRate);
 
    	overallNonzeroReqRate = meter("NonZero_Request_Rate");
 	meter_confidence(overallNonzeroReqRate);
 	
-    	heavyNonzeroReqRate = meter("Heavy_NonZero_Request_Rate");
+	heavyNonzeroReqRate = meter("Heavy_NonZero_Request_Rate");
 	meter_confidence(heavyNonzeroReqRate);
 	
-    	lightNonzeroReqRate = meter("Light_NonZero_Request_Rate");
+	lightNonzeroReqRate = meter("Light_NonZero_Request_Rate");
 	meter_confidence(lightNonzeroReqRate);
 	
 	/* setup empirical distribution for packet sizes */
@@ -1385,17 +1387,17 @@ void sim()
 		table_confidence(onuAttrs[i].transmitThroughput);
 
 
-        	onuAttrs[i].zeroReqRate = meter("Zero Request Rate");
-        	meter_confidence(onuAttrs[i].zeroReqRate);
-        	onuAttrs[i].nonzeroReqRate = meter("Non-Zero Request Rate");
-        	meter_confidence(onuAttrs[i].nonzeroReqRate);
+		onuAttrs[i].zeroReqRate = meter("Zero Request Rate");
+		meter_confidence(onuAttrs[i].zeroReqRate);
+		onuAttrs[i].nonzeroReqRate = meter("Non-Zero Request Rate");
+		meter_confidence(onuAttrs[i].nonzeroReqRate);
 		/* setup ONU latency */
 		onuAttrs[i].latency = simParams.ONU_PROP[i]; /* ONU distance of 10 to 20 km */
 		onuAttrs[i].rtt	= onuAttrs[i].latency*2;
 		/*
 		 * Setup ONU WDM information
 		 */
-        	onuAttrs[i].numSupportedLambdas = 0;
+		onuAttrs[i].numSupportedLambdas = 0;
 		if(i < simParams.NUM_WDM_ONU)
 		{
 			/* Setup simParams.NUM_WDM_ONU worth of ONUs as WDM supporting */
@@ -1473,11 +1475,11 @@ void sim()
 			/* the rest only support a single wavelength */
 			onuAttrs[i].supportedLambdas[0] = 0;
 			onuAttrs[i].supportedLambdasMap[0] = LAMBDA_TRUE;
-            		for(j=1;j < simParams.NUM_LAMBDAS+1; j++)
+			for(j=1;j < simParams.NUM_LAMBDAS+1; j++)
            		{
-                		onuAttrs[i].supportedLambdas[j] = LAMBDA_NULL;
-                		onuAttrs[i].supportedLambdasMap[j] = LAMBDA_FALSE;
-            		}
+					onuAttrs[i].supportedLambdas[j] = LAMBDA_NULL;
+					onuAttrs[i].supportedLambdasMap[j] = LAMBDA_FALSE;
+				}
             		onuAttrs[i].numSupportedLambdas = 1;
 		}
 		
@@ -1582,19 +1584,24 @@ void sim()
 	
 	/* Spawn process that handles simulation execution */
 	sim_ctrl();
+	//TSprint("11\n");
 	wait(SIM_END_EVENT);
 	
+	//~ TSprint("22\n");
 	// Test Variabels sim_finish2
 	if (simType == PILOT_RUN) {
 		test_vars.sim_finish2[test_vars.runNum][test_vars.loadOrderCounter][0]++;
 		test_var_print();
+	//~ TSprint("33\n");
 	}
 	if (simType == ACTUAL_RUN) {
 		test_vars.sim_finish2[test_vars.runNum][test_vars.loadOrderCounter][1]++;
 		test_var_print();
+	//~ TSprint("44\n");
 	}
 	
     	/* Flush grant trace file if necessary */
+	//~ TSprint("55\n");
     	if(simParams.GRANT_TRACE == GRANT_TRACE_ON)
     	{
         	grant_trace_flush();
@@ -2402,8 +2409,11 @@ void read_sim_cfg_file()
 #endif
 	}
 	
-	find_num_layers();
-	find_num_frames();
+	if(simParams.SCALABLE_VIDEO_TRAFFIC == 1)
+	{
+		find_num_layers();
+		find_num_frames();
+	}
 	
 	// Test Variables read_sim_cfg_file_finish
 	test_vars.read_sim_cfg_file_finish++;

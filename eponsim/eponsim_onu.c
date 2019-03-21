@@ -178,6 +178,8 @@ void onu(int onuNum, int lambdaNum)
 #ifdef DEBUG_TRC_HI
 	printf("ONU #%d, Lambda #%d\n",onuNum,lambdaNum);
 #endif
+
+	//~ TSprint("ONU #%d, Lambda #%d\n",onuNum,lambdaNum);
 	
 	/* Upstream transmission gate functionality of ONU */
 	while(!terminateSim) /* permanent behavior of the ONU process model */
@@ -186,6 +188,7 @@ void onu(int onuNum, int lambdaNum)
 #ifdef DEBUG_TRC
 		printf("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
 #endif
+		//~ TSprint("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
 
 #ifdef DEBUG_ONU		
 		if (onuNum == 1 && simtime() >= 7200)	printf("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
@@ -197,6 +200,7 @@ void onu(int onuNum, int lambdaNum)
 		printf("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current queue size = %ld]\n",simtime(),onuNum, lambdaNum,onuAttrs[onuNum].packetQueueSize);
 		printf("  MPCP GATE:: start = %f, length = %f, lambda = %d\n", pendingGATE->start, pendingGATE->length, pendingGATE->lambda);
 #endif
+		//~ TSprint("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current queue size = %ld]\n",simtime(),onuNum, lambdaNum,onuAttrs[onuNum].packetQueueSize);
 
 #ifdef DEBUG_ONU
 		if (onuNum == 1 && simtime() >= 7200)	printf("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current data queue size = %ld] [current video queue size = %.0f]\n",simtime(),onuNum,
@@ -214,6 +218,7 @@ void onu(int onuNum, int lambdaNum)
 		if(onuAttrs[onuNum].supportedLambdasMap[lambdaNum] == LAMBDA_FALSE)
 		{
 			printf("\n\n\n[%10.5e] Wavelength #%d not supported on ONU #%d!!!!!\n\n\n",simtime(),lambdaNum,onuNum);
+			TSprint("\n\n\n[%10.5e] Wavelength #%d not supported on ONU #%d!!!!!\n\n\n",simtime(),lambdaNum,onuNum);
 			/* Fill out some context information */
 			dump_msg_buf[0] = '\0';
 			sprintf(dump_msg_buf,"Detected by ONU #%d\n",onuNum);
@@ -249,6 +254,7 @@ void onu(int onuNum, int lambdaNum)
 		{
 			/* If still too small, this is an error, record it */
 			printf("\n\n\n[%10.5e] GATE too small!!!, Data_REPORT=%.0f bytes, Data_Grant=%lf bytes, byte_diff=%e, ONU# %d\n\n\n",simtime(),onuAttrs[onuNum].rptQueueSize, lengthCompare, onuAttrs[onuNum].rptQueueSize-lengthCompare, onuNum);
+			TSprint("\n\n\n[%10.5e] GATE too small!!!, Data_REPORT=%.0f bytes, Data_Grant=%lf bytes, byte_diff=%e, ONU# %d\n\n\n",simtime(),onuAttrs[onuNum].rptQueueSize, lengthCompare, onuAttrs[onuNum].rptQueueSize-lengthCompare, onuNum);
 			/* Fill out some context information */
 			dump_msg_buf[0] = '\0';
 			sprintf(dump_msg_buf,"Detected by ONU #%d\n",onuNum);
@@ -262,10 +268,12 @@ void onu(int onuNum, int lambdaNum)
 		/* Now wait for beginning of gate */
 		if(pendingGATE->start > simtime())
 		{
+			//~ TSprint("[%10.5e] ONU:Waiting for start of GATE on ONU %d\n",simtime(),onuNum);
 			hold(pendingGATE->start - simtime());
+			//~ TSprint("[%10.5e] ONU:Start of GATE reached on ONU %d\n",simtime(),onuNum);
 		}
 		
-		/*Calculate the maximum grant cycle for all the ONUs*/
+		/* Calculate the maximum grant cycle for all the ONUs */
 		grantCycle = pendingGATE->start - onuAttrs[onuNum].previousGrantStartTime;
 		onuAttrs[onuNum].previousGrantStartTime = pendingGATE->start;
 		
@@ -280,7 +288,7 @@ void onu(int onuNum, int lambdaNum)
 		}
 		
 		/* Record grant level statistics at beginning of grant */
-		record_grant_stats_begin(onuNum, pendingGATE);		
+		record_grant_stats_begin(onuNum, pendingGATE);
 
 		/* We are now gated for transmission, check length of transmission */
 		remainingGrantLength = pendingGATE->grant;

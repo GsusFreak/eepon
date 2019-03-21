@@ -229,7 +229,6 @@ void record_unused_video_grant(int onuNum)
 void record_video_report(int onuNum)
 {
 	record(onuAttrs[onuNum].rptVideoQueueSize, videoReport);
-
 }
 
 

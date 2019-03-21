@@ -1768,7 +1768,7 @@ void online()
 {
 	int pollONU;
 	int loopIndex;
-    	int grantCnt;
+	int grantCnt;
 	double min_lambda_time,max_lambda_time;
 
     grantCnt = 0;
@@ -1822,6 +1822,7 @@ void online()
         printf("[%10.5e] Scheduling ONU #%d\n",simtime(),pollONU);
         fflush(NULL);
 #endif
+		//~ TSprint("[%10.5e] Scheduling ONU #%d\n",simtime(),pollONU);
 		
 		//// New!     4/30/2017
 		//int onuNum_tempvar;
@@ -4118,6 +4119,7 @@ void olt()
 #ifdef DEBUG_TRC_HI
 	printf("OLT started\n");
 #endif
+	TSprint("OLT started\n");
 
 	// Test Variables
 	status_processes_print();
@@ -4125,61 +4127,64 @@ void olt()
 	/* Permanent OLT behavior */
 	while(!terminateSim)
 	{
+		//~ TSprint("OLT round started\n");
 		switch(simParams.OLT_TYPE)
 		{
 			case OLT_LFJ:
-            		case OLT_LFJ_LPT:
-            		case OLT_LFJ_SPT:
-       			case OLT_LFJ_LNF:
-            		case OLT_EAF:
-            		case OLT_EAAF:
-            		case OLT_WBM:
-            		case OLT_WBM_LPT:
-            		case OLT_WBM_LNF:
-            		case OLT_WBM_EAAF:
-            		case OLT_SPD:
-            		case OLT_LPD:
-            		case OLT_SPD_LPT:
-                		offline();
-                		break;
-            		case OLT_IPACT:
-            		case OLT_WDM_IPACT:
-	    		case OLT_ONLINE_NASC:
-            		case OLT_LEAST_ASSIGNED:
-            		case OLT_IPACT_PSF:
+			case OLT_LFJ_LPT:
+			case OLT_LFJ_SPT:
+			case OLT_LFJ_LNF:
+			case OLT_EAF:
+			case OLT_EAAF:
+			case OLT_WBM:
+			case OLT_WBM_LPT:
+			case OLT_WBM_LNF:
+			case OLT_WBM_EAAF:
+			case OLT_SPD:
+			case OLT_LPD:
+			case OLT_SPD_LPT:
+				offline();
+				break;
+			case OLT_IPACT:
+			case OLT_WDM_IPACT:
+			case OLT_ONLINE_NASC:
+			case OLT_LEAST_ASSIGNED:
+			case OLT_IPACT_PSF:
 				online();
 				break;
-            		case OLT_ONLINE_INTERVAL_LFJ_LPT:
-            		case OLT_ONLINE_INTERVAL_LFJ_SPT:
-            		case OLT_ONLINE_INTERVAL_LFJ_LNF:
-            		case OLT_ONLINE_INTERVAL_WBM:
-            		case OLT_ONLINE_INTERVAL_WBM_LPT:
-            		case OLT_ONLINE_INTERVAL_WBM_LNF:
-            		case OLT_ONLINE_INTERVAL_EAF:
-            		case OLT_ONLINE_INTERVAL_EAAF:
-            		case OLT_ONLINE_INTERVAL_WBM_EAAF:
-                		online_interval();
-                		break;
-            		case OLT_ONLINE_JIT_LFJ_LPT:
-            		case OLT_ONLINE_JIT_LFJ_LNF:
-            		case OLT_ONLINE_JIT_LFJ_SPT:
-            		case OLT_ONLINE_JIT_WBM:
-            		case OLT_ONLINE_JIT_WBM_LPT:
-            		case OLT_ONLINE_JIT_WBM_LNF:
-            		case OLT_ONLINE_JIT_EAF:
-            		case OLT_ONLINE_JIT_EAAF:
-            		case OLT_ONLINE_JIT_WBM_EAAF:
-            		case OLT_ONLINE_JIT_SPD:
-            		case OLT_ONLINE_JIT_LPD:
-                		online_jit2();
-                		break;
-            		case OLT_ONLINE_JIT_TEST:
-                		online_jit_test();
-                		break;
-            		default:
+			case OLT_ONLINE_INTERVAL_LFJ_LPT:
+			case OLT_ONLINE_INTERVAL_LFJ_SPT:
+			case OLT_ONLINE_INTERVAL_LFJ_LNF:
+			case OLT_ONLINE_INTERVAL_WBM:
+			case OLT_ONLINE_INTERVAL_WBM_LPT:
+			case OLT_ONLINE_INTERVAL_WBM_LNF:
+			case OLT_ONLINE_INTERVAL_EAF:
+			case OLT_ONLINE_INTERVAL_EAAF:
+			case OLT_ONLINE_INTERVAL_WBM_EAAF:
+				online_interval();
+				break;
+			case OLT_ONLINE_JIT_LFJ_LPT:
+			case OLT_ONLINE_JIT_LFJ_LNF:
+			case OLT_ONLINE_JIT_LFJ_SPT:
+			case OLT_ONLINE_JIT_WBM:
+			case OLT_ONLINE_JIT_WBM_LPT:
+			case OLT_ONLINE_JIT_WBM_LNF:
+			case OLT_ONLINE_JIT_EAF:
+			case OLT_ONLINE_JIT_EAAF:
+			case OLT_ONLINE_JIT_WBM_EAAF:
+			case OLT_ONLINE_JIT_SPD:
+			case OLT_ONLINE_JIT_LPD:
+				online_jit2();
+				break;
+			case OLT_ONLINE_JIT_TEST:
+				online_jit_test();
+				break;
+			default:
 				printf("FATAL ERROR: Invalid OLT Type!!\n");
 				break;
 		}
+		//~ TSprint("OLT round completed\n");
+
 	}	
 	
 }
