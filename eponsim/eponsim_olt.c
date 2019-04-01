@@ -4116,9 +4116,7 @@ void online_jit_test()
 void olt()
 {
 	create("OLT");
-#ifdef DEBUG_TRC_HI
-	printf("OLT started\n");
-#endif
+	
 	TSprint("OLT started\n");
 
 	// Test Variables

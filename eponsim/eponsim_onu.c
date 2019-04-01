@@ -31,10 +31,6 @@ void check_data_packet_list(int onuNum) {
 		fatalErrorCode = FATAL_CAUSE_LENGTH_DATA_BUFFER_OVR;
 		dump_sim_core();
 	}
-	//while (length > DATA_QUEUE_MAX_LENGTH) {
-		//remove_packet(onuNum);
-		//length--;
-	//}
 	
 	return;
 }
@@ -185,34 +181,24 @@ void onu(int onuNum, int lambdaNum)
 	while(!terminateSim) /* permanent behavior of the ONU process model */
 	{
 	
-#ifdef DEBUG_TRC
-		printf("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
-#endif
 		//~ TSprint("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
 
-#ifdef DEBUG_ONU		
-		if (onuNum == 1 && simtime() >= 7200)	printf("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
-#endif
+		//~ if (onuNum == 1 && simtime() >= 7200)	TSPrint("[%10.5e] ONU:Waiting for GATE on ONU %d,L#%d\n",simtime(),onuNum,lambdaNum);
 
 		/* Wait for a TX GATE from the OLT */
+		
 		receive(onuAttrs[onuNum].grantMailbox[lambdaNum], (long *) &pendingGATE);
-#ifdef DEBUG_TRC
-		printf("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current queue size = %ld]\n",simtime(),onuNum, lambdaNum,onuAttrs[onuNum].packetQueueSize);
-		printf("  MPCP GATE:: start = %f, length = %f, lambda = %d\n", pendingGATE->start, pendingGATE->length, pendingGATE->lambda);
-#endif
+		
+		//~ TSprint("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current queue size = %ld]\n",simtime(),onuNum, lambdaNum,onuAttrs[onuNum].packetQueueSize);
+		//~ TSprint("  MPCP GATE:: start = %f, length = %f, lambda = %d\n", pendingGATE->start, pendingGATE->length, pendingGATE->lambda);
+		
 		//~ TSprint("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current queue size = %ld]\n",simtime(),onuNum, lambdaNum,onuAttrs[onuNum].packetQueueSize);
 
-#ifdef DEBUG_ONU
-		if (onuNum == 1 && simtime() >= 7200)	printf("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current data queue size = %ld] [current video queue size = %.0f]\n",simtime(),onuNum,
-					lambdaNum,onuAttrs[onuNum].packetQueueSize, onuAttrs[onuNum].packetVideoQueueSize);
-		if (onuNum == 1 && simtime() >= 7200)	printf("  MPCP GATE:: start = %f, length = %lf, D-length = %lf, V-length = %lf, lambda = %d\n", pendingGATE->start, pendingGATE->grant, pendingGATE->data_grant, pendingGATE->video_grant, pendingGATE->lambda);
-		if (onuNum == 1 && simtime() >= 7200)	printf(" V-Report = %.0f, D-Report = %ld\n", onuAttrs[onuNum].rptVideoQueueSize,onuAttrs[onuNum].rptQueueSize);
-#endif
-		if (onuNum == 1 && simtime() >= 7200)	TSprint("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current data queue size = %ld] [current video queue size = %.0f]\n",simtime(),onuNum,
-					lambdaNum,onuAttrs[onuNum].packetQueueSize, onuAttrs[onuNum].packetVideoQueueSize);
-		if (onuNum == 1 && simtime() >= 7200)	TSprint("  MPCP GATE:: start = %f, length = %lf, D-length = %lf, V-length = %lf, lambda = %d\n", pendingGATE->start, pendingGATE->grant, pendingGATE->data_grant, pendingGATE->video_grant, pendingGATE->lambda);
-		if (onuNum == 1 && simtime() >= 7200)	TSprint(" V-Report = %.0f, D-Report = %ld\n", onuAttrs[onuNum].rptVideoQueueSize,onuAttrs[onuNum].rptQueueSize);
-
+		//~ if (onuNum == 1 && simtime() >= 7200)	TSprint("[%10.5e] ONU:Received GATE on ONU %d,L#%d [current data queue size = %ld] [current video queue size = %.0f]\n",simtime(),onuNum,
+					//~ lambdaNum,onuAttrs[onuNum].packetQueueSize, onuAttrs[onuNum].packetVideoQueueSize);
+		//~ if (onuNum == 1 && simtime() >= 7200)	TSprint("  MPCP GATE:: start = %f, length = %lf, D-length = %lf, V-length = %lf, lambda = %d\n", pendingGATE->start, pendingGATE->grant, pendingGATE->data_grant, pendingGATE->video_grant, pendingGATE->lambda);
+		//~ if (onuNum == 1 && simtime() >= 7200)	TSprint(" V-Report = %.0f, D-Report = %ld\n", onuAttrs[onuNum].rptVideoQueueSize,onuAttrs[onuNum].rptQueueSize);
+		
 
 		/* Check that this wavelength is supported */
 		if(onuAttrs[onuNum].supportedLambdasMap[lambdaNum] == LAMBDA_FALSE)
@@ -303,12 +289,10 @@ void onu(int onuNum, int lambdaNum)
 		 *########################################################################################################################
 		 */
 		 
-#ifdef DEBUG_ONU
-		if (onuNum == 1 && /*(remainingVideoGrantLength != 0 || remainingDataGrantLength != 0) &&*/ simtime() >= 7200 )
-		{
-			printf("V-RPT = %.0f, D-RPT = %ld, V-GATE = %lf, D-GATE = %lf, GATE = %lf, onuNum = %d\n",onuAttrs[onuNum].rptVideoQueueSize, onuAttrs[onuNum].rptQueueSize, pendingGATE->video_grant, pendingGATE->data_grant, pendingGATE->grant,onuNum);		
-		}	
-#endif
+		//~ if (onuNum == 1 && /*(remainingVideoGrantLength != 0 || remainingDataGrantLength != 0) &&*/ simtime() >= 7200 )
+		//~ {
+			//~ TSprint("V-RPT = %.0f, D-RPT = %ld, V-GATE = %lf, D-GATE = %lf, GATE = %lf, onuNum = %d\n",onuAttrs[onuNum].rptVideoQueueSize, onuAttrs[onuNum].rptQueueSize, pendingGATE->video_grant, pendingGATE->data_grant, pendingGATE->grant,onuNum);		
+		//~ }	
 		
 		if (pendingGATE->video_grant > 0)
 		{
