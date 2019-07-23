@@ -1,5 +1,5 @@
 CC = gcc -m32 -Wall -g
-CSIM = -I /home/admin1/scvid/eponsim/csim/lib
+CSIM = -I csim/lib
 
 hungarian.o: hungarian.c hungarian.h
 	$(CC) -c hungarian.c -o hungarian.o
@@ -62,16 +62,16 @@ eponsim_trc_hi.o: eponsim.c eponsim.h eponsim_onu.h eponsim_olt.h eponsim_traffi
 	$(CC) $(CSIM) -DDEBUG_TRC_HI -c eponsim.c -o eponsim_trc_hi.o
 
 eponsim: eponsim.o eponsim_onu.o eponsim_olt.o eponsim_traffic.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o
-	$(CC) eponsim.o eponsim_onu.o eponsim_olt.o eponsim_traffic.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o /home/admin1/scvid/eponsim/csim/lib/csim.a -lm -o eponsim
+	$(CC) eponsim.o eponsim_onu.o eponsim_olt.o eponsim_traffic.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o csim/lib/csim.a -lm -o eponsim
 
 eponsim_trc_lo: eponsim_trc_lo.o eponsim_onu_trc_lo.o eponsim_olt_trc_lo.o eponsim_traffic_trc_lo.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o
-	$(CC) eponsim_trc_lo.o eponsim_onu_trc_lo.o eponsim_olt_trc_lo.o eponsim_traffic_trc_lo.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o /home/admin1/scvid/eponsim/csim/lib/csim.a -lm -o eponsim_trc_lo
+	$(CC) eponsim_trc_lo.o eponsim_onu_trc_lo.o eponsim_olt_trc_lo.o eponsim_traffic_trc_lo.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o csim/lib/csim.a -lm -o eponsim_trc_lo
 
 eponsim_trc: eponsim_trc.o eponsim_onu_trc.o eponsim_olt_trc.o eponsim_traffic_trc.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o
-	$(CC) eponsim_trc.o eponsim_onu_trc.o eponsim_olt_trc.o eponsim_traffic_trc.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o /home/admin1/scvid/eponsim/csim/lib/csim.a -lm -o eponsim_trc
+	$(CC) eponsim_trc.o eponsim_onu_trc.o eponsim_olt_trc.o eponsim_traffic_trc.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o csim/lib/csim.a -lm -o eponsim_trc
 
 eponsim_trc_hi: eponsim_trc_hi.o eponsim_onu_trc_hi.o eponsim_olt_trc_hi.o eponsim_traffic_trc_hi.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o
-	$(CC) eponsim_trc_hi.o eponsim_onu_trc_hi.o eponsim_olt_trc_hi.o eponsim_traffic_trc_hi.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o /home/admin1/scvid/eponsim/csim/lib/csim.a -lm -o eponsim_trc_hi
+	$(CC) eponsim_trc_hi.o eponsim_onu_trc_hi.o eponsim_olt_trc_hi.o eponsim_traffic_trc_hi.o eponsim_prop.o eponsim_util.o eponsim_stats.o hungarian.o csim/lib/csim.a -lm -o eponsim_trc_hi
 
 clean: 
 	rm *.o; rm eponsim

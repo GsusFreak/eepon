@@ -224,7 +224,9 @@ int ONUprint(int ONUids, const char *text, ...)
 	va_list args;
 	int out;
 	
-	va_start(args, text);
+	int hello = 30;
+  hello += 10;
+  va_start(args, text);
 	out = vfprintf(ONU_files[ONUids], text, args);
 	va_end(args);
 	return out;
@@ -2402,8 +2404,8 @@ void read_sim_cfg_file()
 #endif
 	}
 	
-	find_num_layers();
-	find_num_frames();
+	//find_num_layers();
+	//find_num_frames();
 	
 	// Test Variables read_sim_cfg_file_finish
 	test_vars.read_sim_cfg_file_finish++;
@@ -2441,7 +2443,7 @@ void find_num_layers()
 		// TSprint("Flag 1\n");
 		inFilePtr = fopen(simParams.VIDEO_TRACE_FILE, "r");
 		if (inFilePtr == NULL)
-			TSprint("Error opening %s \n", simParams.VIDEO_TRACE_FILE);
+			TSprint("Error opening(1) %s \n", simParams.VIDEO_TRACE_FILE);
 		// while (flag == -1)
 			// flag = get_line2(inFilePtr, mystring, LINE_LENGTH);
 		// TSprint("Flag 2\t c=%d\n", c);
@@ -2527,7 +2529,7 @@ void find_num_frames()
 
 	inFilePtr = fopen(simParams.VIDEO_TRACE_FILE, "r");
 	if (inFilePtr == NULL)
-		TSprint("Error opening %s \n", simParams.VIDEO_TRACE_FILE);
+		TSprint("Error opening(2) %s \n", simParams.VIDEO_TRACE_FILE);
 	
 	while (flag != 2000)
 	{

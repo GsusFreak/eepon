@@ -500,7 +500,7 @@ if (onuNum == 1 && (pendingGATE->grant) != 0 && simtime() >= 7200)
 		else
 		{
 			mpcp_video_report(onuNum);
-			record_video_report(onuNum);
+			// record_video_report(onuNum); //NewNew
 		}
 			
 			/* 

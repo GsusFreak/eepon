@@ -3,6 +3,7 @@
 # Ignore certain folders
 /epon_sims/*
 /Traces/*
+/results/*
 
 # Files and folders to preserve within epon_sims
 !/epon_sims/sim_mgr
