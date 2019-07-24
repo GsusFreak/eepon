@@ -1522,13 +1522,13 @@ void sim()
 				break;
 		}
 		
-		if((simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON) && (simType == ACTUAL_RUN))
-		{
-			if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_OFF)
-				traffic_src_video(i, simParams.VIDEO_TRACE_FILE);
-			else if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_ON)
-				traffic_scalable_video(i, simParams.VIDEO_TRACE_FILE);
-		}
+		// if((simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON) && (simType == ACTUAL_RUN))
+		// {
+		// 	if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_OFF)
+		// 		traffic_src_video(i, simParams.VIDEO_TRACE_FILE);
+		// 	else if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_ON)
+		// 		traffic_scalable_video(i, simParams.VIDEO_TRACE_FILE);
+		// }
 	}
 	
 	if(simParams.OLT_TYPE == OLT_LEAST_ASSIGNED)

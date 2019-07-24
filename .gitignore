@@ -20,6 +20,7 @@
 *~
 *#
 *.bak
+*.swp
 
 # Files to ignore in eponsim
 eponsim/svtest
