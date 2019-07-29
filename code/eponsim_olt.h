@@ -1,5 +1,5 @@
 /*
-	TITLE: 		EPON Simulator OLT Models Function Definitions
+	TITLE: 		EPON Simulator ONU Models Function Definitions
 	AUTHOR: 	Michael P. McGarry
 	DATE:
 	VERSION:	1.0
@@ -8,10 +8,13 @@
 	
 */
 
-#ifndef EPONSIM_OLT_H
-#define EPONSIM_OLT_H
+#ifndef EPONSIM_ONU_H
+#define EPONSIM_ONU_H
 
-/* OLT model */
-void onu_new();
+/* ONU model */
+void olt(int onuNum, int lambdaNum);
+
+void check_data_packet_list(int onuNum);
+void check_video_packet_list(int onuNum);
 
 #endif

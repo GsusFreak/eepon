@@ -1433,7 +1433,7 @@ void sim()
   	  		    	tempStr[0] = '\0'; 
   	  		    	sprintf(tempStr, "ONU #%d,L#%d grant mb", i,j);
   	  		    	onuAttrs[i].grantMailbox[j] = mailbox(tempStr);
-  	  		    	olt_new(i,j); /* spawn an ONU process for each wavelength */
+  	  		    	olt(i,j); /* spawn an ONU process for each wavelength */
   	  		  }
   	  	}
   	  	/* Spawn Traffic generator(s) for ONU */
@@ -1458,8 +1458,8 @@ void sim()
   	
   	for(i=0; i < simParams.NUM_ONU; i++) printf("ONU #%d assigned to lambda #%d\n", i, onuAttrs[i].tunedLambda);
   
-  	/* Start the OLT process */
-  	onu_new();
+  	/* Start the new ONU process */
+  	onu();
   
     /* Start the throughput calculation process */
     onu_throughput_calc();

@@ -4,7 +4,7 @@ CSIM = -I csim/lib
 hungarian.o: hungarian.c hungarian.h
 	$(CC) -c hungarian.c -o hungarian.o
 
-eponsim_onu.o: eponsim_onu.c eponsim_onu.h eponsim.h eponsim_util.h eponsim_stats.h
+eponsim_onu.o: eponsim_onu.c eponsim_onu.h eponsim.h eponsim_util.h hungarian.h
 	$(CC) $(CSIM) -c eponsim_onu.c -o eponsim_onu.o
 
 eponsim_onu_trc_lo.o: eponsim_onu.c eponsim_onu.h eponsim.h eponsim_util.h eponsim_stats.h
@@ -16,7 +16,7 @@ eponsim_onu_trc.o: eponsim_onu.c eponsim_onu.h eponsim.h eponsim_util.h eponsim_
 eponsim_onu_trc_hi.o: eponsim_onu.c eponsim_onu.h eponsim.h eponsim_util.h eponsim_stats.h
 	$(CC) $(CSIM) -DDEBUG_TRC_HI -c eponsim_onu.c -o eponsim_onu_trc_hi.o
 
-eponsim_olt.o: eponsim_olt.c eponsim_olt.h eponsim.h eponsim_util.h hungarian.h
+eponsim_olt.o: eponsim_olt.c eponsim_olt.h eponsim.h eponsim_util.h eponsim_stats.h
 	$(CC) $(CSIM) -c eponsim_olt.c -o eponsim_olt.o
 
 eponsim_olt_trc_lo.o: eponsim_olt.c eponsim_olt.h eponsim.h eponsim_util.h hungarian.h
