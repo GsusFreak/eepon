@@ -1343,13 +1343,7 @@ void online()
 }
 
 
-
-/* 
- * FUNCTION: olt()
- * DESCRIPTION: Process model of an OLT
- *
- */
-void olt()
+void onu_new()
 {
 	create("OLT");
 	// printf("OLT started\n");
@@ -1363,3 +1357,5 @@ void olt()
     online();
 	}	
 }
+
+

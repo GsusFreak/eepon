@@ -23,15 +23,15 @@
 *.swp
 
 # Files to ignore in eponsim
-eponsim/svtest
-eponsim/eponsim
-eponsim/eponsim_trc
-eponsim/eponsim_trc_lo
-eponsim/eponsim_trc_hi
-eponsim/testNewGen
+code/svtest
+code/eponsim
+code/eponsim_trc
+code/eponsim_trc_lo
+code/eponsim_trc_hi
+code/testNewGen
 
 # Make sure to preserve the csim files
-!eponsim/csim
-!eponsim/csim/*
+!code/csim
+!code/csim/*
 
 
