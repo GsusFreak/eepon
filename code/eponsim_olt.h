@@ -12,9 +12,8 @@
 #define EPONSIM_ONU_H
 
 /* ONU model */
-void olt(int onuNum, int lambdaNum);
+void olt();
 
-void check_data_packet_list(int onuNum);
-void check_video_packet_list(int onuNum);
+void check_data_packet_list();
 
 #endif

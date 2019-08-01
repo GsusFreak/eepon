@@ -25,7 +25,7 @@ EVENT SIM_END_EVENT;
 sSIM_PARAMS simParams;
 
 /* ONU attributes structure array */
-sONU onuAttrs[MAX_ONU];
+sONU oltAttrs;
 
 /* Scheduling Pool structure array */
 sSCHED_POOL schedPool[MAX_ONU];
@@ -440,8 +440,8 @@ int file_exists(const char *fname) {
 /* Calculate certain simulation parameters */
 void calc_sim_params()
 {
-    double dutyCycle;
-    int loopIndex;
+  double dutyCycle;
+  int loopIndex;
 
 	/* parameters calculated from specified parameters */
 	simParams.NUM_PARTS			= (simParams.NUM_ONU - simParams.NUM_HEAVY_ONU) + (simParams.NUM_HEAVY_ONU*simParams.HEAVY_LOAD);
@@ -451,24 +451,24 @@ void calc_sim_params()
 	simParams.TIME_PER_BYTE			= (8)/simParams.LINK_SPEED;	/* at 1 Mbps link speed, byte time is 8 microseconds */
 	simParams.PREAMBLE_IPG_TIME		= PREAMBLE_IPG_BYTES*simParams.TIME_PER_BYTE;
 	
-     /* 
-     * Self-Similar parameters 
-     */
-    /* a - shape parameter, b - location parameter */
-    /* a is fixed according to hurst parameter, b is adjusted for load */
+   /* 
+   * Self-Similar parameters 
+   */
+  /* a - shape parameter, b - location parameter */
+  /* a is fixed according to hurst parameter, b is adjusted for load */
 	simParams.SS_PARETO_LOC_PARAM		= (double) 1;
 	simParams.SS_PARETO_SHAPE_PARAM		= 3-2*simParams.SS_HURST_PARAM;
-    /* Calculate Average Burst Size, i.e., the mean of the Pareto distribution with the Shape and Location Params above */
+  /* Calculate Average Burst Size, i.e., the mean of the Pareto distribution with the Shape and Location Params above */
 	simParams.AVG_BURST_SIZE	= (simParams.SS_PARETO_LOC_PARAM*simParams.SS_PARETO_SHAPE_PARAM)/(simParams.SS_PARETO_SHAPE_PARAM - 1);
 	//simParams.LINK_SPEED_PER_SS_STREAM	= simParams.LINK_SPEED_PER_PART/simParams.NUM_SS_STREAMS;
-    /* Calculate AVG ON Period value (in seconds) */
+  /* Calculate AVG ON Period value (in seconds) */
 	simParams.AVG_T_ON			= (AVG_PKT_SIZE+PREAMBLE_IPG_BYTES)*simParams.AVG_BURST_SIZE*simParams.TIME_PER_BYTE;
 
-    /* Calculate AVG Off Period values (in seconds), this is how we control the offered load */
-    /* Duty cycle should equal the desired load per SS stream */
-    // Potential bug in next line, fixed in line after
-    //loadPart = simParams.LINK_SPEED_PER_SS_STREAM*simParams.DESIRED_LOAD*(simParams.TIME_PER_BYTE/8);
-    dutyCycle = simParams.DESIRED_LOAD/(simParams.NUM_SS_STREAMS*simParams.NUM_PARTS);
+  /* Calculate AVG Off Period values (in seconds), this is how we control the offered load */
+  /* Duty cycle should equal the desired load per SS stream */
+  // Potential bug in next line, fixed in line after
+  //loadPart = simParams.LINK_SPEED_PER_SS_STREAM*simParams.DESIRED_LOAD*(simParams.TIME_PER_BYTE/8);
+  dutyCycle = simParams.DESIRED_LOAD/(simParams.NUM_SS_STREAMS*simParams.NUM_PARTS);
 
 	simParams.AVG_T_OFF		= (simParams.AVG_T_ON / dutyCycle) - simParams.AVG_T_ON;
 	simParams.AVG_T_OFF_HEAVY	= (simParams.AVG_T_ON / (simParams.HEAVY_LOAD*dutyCycle)) - simParams.AVG_T_ON;
@@ -476,26 +476,26 @@ void calc_sim_params()
 	simParams.SS_OFF_LOC_PARAM		    = simParams.AVG_T_OFF * ((simParams.SS_PARETO_SHAPE_PARAM - 1)/simParams.SS_PARETO_SHAPE_PARAM);
 	simParams.SS_OFF_LOC_PARAM_HEAVY	= simParams.AVG_T_OFF_HEAVY * ((simParams.SS_PARETO_SHAPE_PARAM - 1)/simParams.SS_PARETO_SHAPE_PARAM);
 
-    //printf("AVG_T_ON = %g, AVG_T_OFF = %g, Duty Cycle = %g\n",simParams.AVG_T_ON, simParams.AVG_T_OFF, 
-    //       simParams.AVG_T_ON/(simParams.AVG_T_ON+simParams.AVG_T_OFF));
+  //printf("AVG_T_ON = %g, AVG_T_OFF = %g, Duty Cycle = %g\n",simParams.AVG_T_ON, simParams.AVG_T_OFF, 
+  //       simParams.AVG_T_ON/(simParams.AVG_T_ON+simParams.AVG_T_OFF));
 
-    /* Set ideal throughput values */
-    printf("\nIdeal throughput values\n");
-	  for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
+  /* Set ideal throughput values */
+  printf("\nIdeal throughput values\n");
+	for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
+  {
+    if(loopIndex < simParams.NUM_HEAVY_ONU)
     {
-        if(loopIndex < simParams.NUM_HEAVY_ONU)
-        {
-            /* Heavy loaded ONU */
-            ideal_tput[loopIndex] = simParams.HEAVY_LOAD*simParams.LINK_SPEED_PER_PART;
-        }
-        else
-        {
-            /* Light loaded ONU */
-            ideal_tput[loopIndex] = simParams.LINK_SPEED_PER_PART;
-        }
-        printf("ONU #%d = %g\n",loopIndex,ideal_tput[loopIndex]);
+      /* Heavy loaded ONU */
+      ideal_tput[loopIndex] = simParams.HEAVY_LOAD*simParams.LINK_SPEED_PER_PART;
     }
-    printf("\n\n");
+    else
+    {
+      /* Light loaded ONU */
+      ideal_tput[loopIndex] = simParams.LINK_SPEED_PER_PART;
+    }
+    printf("ONU #%d = %g\n",loopIndex,ideal_tput[loopIndex]);
+  }
+  printf("\n\n");
 
 }
 
@@ -507,20 +507,14 @@ void init_data_structures()
 	terminateSim = 0;
 	schedPoolCount = 0;
 	reset_throughput_flag = 0;
+  oltAttrs.packetsHead		= NULL;
+  oltAttrs.packetsTail		= NULL;
+  oltAttrs.packetQueueSize	= 0;
+  oltAttrs.packetQueueNum	= 0;
+  oltAttrs.latency		= 0;
+  oltAttrs.transmitByteCnt	= 0;
 	for(i=0; i < simParams.NUM_ONU; i++)
 	{
-		onuAttrs[i].packetsHead		= NULL;
-		onuAttrs[i].packetsTail		= NULL;
-		onuAttrs[i].packetQueueSize	= 0;
-		onuAttrs[i].rptQueueSize	= 0;
-		onuAttrs[i].packetQueueNum	= 0;
-		onuAttrs[i].rptQueueNum	   	= 0;
-		onuAttrs[i].latency		= 0;
-		onuAttrs[i].readyTime      	= 0;
-		onuAttrs[i].step2Sched      	= 0;
-        	onuAttrs[i].grantLen        	= 0;
-		onuAttrs[i].prevGateTime	= 0;
-		onuAttrs[i].transmitByteCnt	= 0;
 		schedPool[i].gateLambda		= LAMBDA_NULL;
 		schedPool[i].gateLength		= 0;
  		schedPool[i].gateStart		= 1e200;
@@ -568,7 +562,7 @@ void sim_err_handler(long err_msg_num)
 void dump_sim_core()
 {
 	FILE *simcoreFile;
-	int loopIndex,loopIndex2;
+	int loopIndex;
 	
 	fatalErrorCount++;
 	
@@ -627,49 +621,25 @@ void dump_sim_core()
 	/* Collect stats in files */
 	fprintf(simcoreFile, "Statistics\n");
 	fprintf(simcoreFile,"overallQueueDelay = %e +/- %e, heavyQueueDelay = %e +/- %e, lightQueueDelay = %e +/- %e\n", 
-			table_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.95), 
-			table_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.95), 
-			table_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.95));
+	table_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.95), 
+	table_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.95), 
+	table_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.95));
 	fflush(NULL);
-	for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-	{
-		fprintf(simcoreFile,"qTime[%d] = %e +/- %e, qLen[%d] = %e +/- %e,  ", loopIndex, table_mean(onuAttrs[loopIndex].queueTimeTable), 
-		table_conf_halfwidth(onuAttrs[loopIndex].queueTimeTable, 0.98), loopIndex, 
-		table_mean(onuAttrs[loopIndex].queueLengthTable), 
-		table_conf_halfwidth(onuAttrs[loopIndex].queueLengthTable, 0.98));
-	}
-    fprintf(simcoreFile,"\n");
-	fflush(NULL);
-	for(loopIndex=0; loopIndex < simParams.NUM_LAMBDAS; loopIndex++)
-	{
-		fprintf(simcoreFile,"Utilization of Wavelength #%d: %f\n", loopIndex, util(lambda[loopIndex]));
-	}
+	fprintf(simcoreFile,"qTime = %e +/- %e, qLen = %e +/- %e,  ", table_mean(oltAttrs.queueTimeTable), 
+	table_conf_halfwidth(oltAttrs.queueTimeTable, 0.98), 
+	table_mean(oltAttrs.queueLengthTable), 
+	table_conf_halfwidth(oltAttrs.queueLengthTable, 0.98));
+  fprintf(simcoreFile,"\n");
 	fflush(NULL);
 	fprintf(simcoreFile, "State Information\n");
-	for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-	{
-		fprintf(simcoreFile, "ONU #%d\n", loopIndex);
-		fprintf(simcoreFile, "packetQueueSize = %.0f, ", onuAttrs[loopIndex].packetQueueSize);
-		fprintf(simcoreFile, "rptQueueSize = %.0f, ", onuAttrs[loopIndex].rptQueueSize);
-		fprintf(simcoreFile, "packetQueueNum = %ld, ", onuAttrs[loopIndex].packetQueueNum);
-		fprintf(simcoreFile, "rptQueueNum = %ld, ", onuAttrs[loopIndex].rptQueueNum);
-		fprintf(simcoreFile, "grantLen = %.0f, ", onuAttrs[loopIndex].grantLen);
-		fprintf(simcoreFile, "rptTime = %e, ", onuAttrs[loopIndex].rptTime);
-		fprintf(simcoreFile, "prevGateTime = %e, ", onuAttrs[loopIndex].prevGateTime);
-		fprintf(simcoreFile, "readyTime = %e, ", onuAttrs[loopIndex].readyTime);
-		fprintf(simcoreFile, "latency = %e, ", onuAttrs[loopIndex].latency);
-		fprintf(simcoreFile, "rtt = %e, ", onuAttrs[loopIndex].rtt);
-		fprintf(simcoreFile, "numSupportedLambdas = %d, ", onuAttrs[loopIndex].numSupportedLambdas);
-        for(loopIndex2=0; loopIndex2 < simParams.NUM_LAMBDAS; loopIndex2++)
-        {
-            fprintf(simcoreFile, "supportedLambdas[%d] = %d, ", loopIndex2, onuAttrs[loopIndex].supportedLambdas[loopIndex2]);
-        }
-		fprintf(simcoreFile, "tunedLambda = %d, ", onuAttrs[loopIndex].tunedLambda);
-		fprintf(simcoreFile, "wdmType = %d, ", onuAttrs[loopIndex].wdmType);
-		fprintf(simcoreFile, "tuningTime = %e, ", onuAttrs[loopIndex].tuningTime);
-		fprintf(simcoreFile, "priority = %d, ", onuAttrs[loopIndex].priority);
-		fprintf(simcoreFile, "tslotStart = %d\n", onuAttrs[loopIndex].tslotStart);
-	}
+  fprintf(simcoreFile, "OLT\n");
+  fprintf(simcoreFile, "packetQueueSize = %.0f, ", oltAttrs.packetQueueSize);
+  fprintf(simcoreFile, "packetQueueNum = %ld, ", oltAttrs.packetQueueNum);
+  fprintf(simcoreFile, "latency = %e, ", oltAttrs.latency);
+  fprintf(simcoreFile, "rtt = %e, ", oltAttrs.rtt);
+  fprintf(simcoreFile, "tuningTime = %e, ", oltAttrs.tuningTime);
+  fprintf(simcoreFile, "priority = %d, ", oltAttrs.priority);
+  fprintf(simcoreFile, "tslotStart = %d\n", oltAttrs.tslotStart);
 	fflush(NULL);
 	
 	for(loopIndex=0; loopIndex < simParams.NUM_LAMBDAS; loopIndex++)
@@ -708,47 +678,6 @@ void sim_cleanup()
 
 }
 
-//##########################################################################################################################
-/* ONU lambda assignment function */
-void lambda_assignment()
-{
-	int search, loopIndex, lambdaNum, optimal, assignedLambda;
-	
-	for(loopIndex=0;loopIndex < simParams.NUM_ONU;loopIndex++)
-	{
-		search = 1;
-		lambdaNum = 0;
-		optimal = 32000;
-		while(search)
-		{
-			if(onuAttrs[loopIndex].supportedLambdas[lambdaNum] != LAMBDA_NULL)
-			{
-				if(lambdaAssign[lambdaNum] < optimal)
-				{
-					optimal = lambdaAssign[lambdaNum];
-					assignedLambda = lambdaNum;
-					if(optimal == 0)
-					{
-						search = 0; /* can't do any better */
-					}
-				}
-			}
-			else
-			{
-				/* we have reached the end of this ONUs list of supported wavelengths */
-				search = 0;
-			}
-			lambdaNum++;
-			if(lambdaNum >= simParams.NUM_LAMBDAS)
-			{
-				search = 0; /* we have reached the end of the wavelength list */
-			}
-		}
-		onuAttrs[loopIndex].tunedLambda = assignedLambda;
-		lambdaAssign[assignedLambda]++;
-	}
-
-}
 
 //##########################################################################################################################
 /* heartbeat process with stats time trace, so we know the simulation is still alive and can trace values of statistics */
@@ -762,7 +691,7 @@ void heartbeat_with_timetrace()
 	create("heartbeat");
 	
 	beat = 0;
-    beatCnt = 0;
+  beatCnt = 0;
 
 	while(!terminateSim)
 	{
@@ -775,95 +704,82 @@ void heartbeat_with_timetrace()
 			hold(simParams.SIM_TRACE_TIMESCALE);
 		}
 		/* Check for excessive buffer sizes */
-        for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-        {
-    		if(onuAttrs[loopIndex].packetQueueSize > MAX_PKT_BUF_SIZE)
-    		{
-                /* Fill out some context information */
-                dump_msg_buf[0] = '\0';
-                sprintf(dump_msg_buf,"Detected by heart beat process\n");
-                sprintf(dump_msg_buf,"%sONU #%d has overflowed it's buffer.\n",dump_msg_buf,loopIndex);
-    			fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
-    			dump_sim_core();
-    		}
-        }
-        /* Update the hearbeat 10-counter */
-        beatCnt++;
-        /* Every 10 heart beats check to see that each ONU is receiving a grant */
-        if(beatCnt == 10)
-        {
-            beatCnt = 0; /* reset heart beat count */
-            for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-            {
-                /* If last grant to an ONU has been more than 10 seconds ago, it is likely not receiving grants */
-                if((simtime() - onuAttrs[loopIndex].prevGateTime) > 10)
-                {
-                    /* Fill out some context information */
-                    dump_msg_buf[0] = '\0';
-                    sprintf(dump_msg_buf,"Detected by heart beat process\n");
-                    sprintf(dump_msg_buf,"%sONU #%d has not received grant in more than 10 seconds.\n",dump_msg_buf,loopIndex);
-                    fatalErrorCode = FATAL_CAUSE_NO_GRANT;
-                    dump_sim_core();
-                }
-            }
-        }
-        /* Check external sim control */
-        if((simCtrlFile = fopen("sim_ctrl","r")) != NULL)
-        {
-		fscanf(simCtrlFile, "%s", currToken);
-		fclose(simCtrlFile);
-		if(strcmp(currToken, "stop") == 0)
-		{
-	                simCtrlFile = fopen("sim_ctrl","w");
-	                fprintf(simCtrlFile,"run");
-	                fclose(simCtrlFile);
-	                /* stop the simulation */
-	                set(SIM_END_EVENT);
-		}
-        }
-        /* 
-		 * Trace statistics 
-		 */
-		 /* queueing delay */
-        for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
-        {
-            overallQueueDelayTrace[loopIndex] = overallQueueDelayTrace[loopIndex+1];
-            simTimeTrace[loopIndex] = simTimeTrace[loopIndex+1];
-        }
-        overallQueueDelayTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallQueueDelay);
-        simTimeTrace[MAX_TRACE_VALUES-1] = simtime();
-        simCtrlFile = fopen("od_trc","w");
-        for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
-        {
-            fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallQueueDelayTrace[loopIndex]);
-        }
+    for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
+    {
+    	if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
+    	{
+        /* Fill out some context information */
+        dump_msg_buf[0] = '\0';
+        sprintf(dump_msg_buf,"Detected by heart beat process\n");
+        sprintf(dump_msg_buf,"%sONU #%d has overflowed it's buffer.\n",dump_msg_buf,loopIndex);
+    		fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
+    		dump_sim_core();
+    	}
+    }
+    /* Update the hearbeat 10-counter */
+    beatCnt++;
+    /* Every 10 heart beats check to see that each ONU is receiving a grant */
+    if(beatCnt == 10)
+    {
+      beatCnt = 0; /* reset heart beat count */
+    }
+    /* Check external sim control */
+    if((simCtrlFile = fopen("sim_ctrl","r")) != NULL)
+    {
+    	fscanf(simCtrlFile, "%s", currToken);
+    	fclose(simCtrlFile);
+    	if(strcmp(currToken, "stop") == 0)
+    	{
+        simCtrlFile = fopen("sim_ctrl","w");
+        fprintf(simCtrlFile,"run");
         fclose(simCtrlFile);
-		 /* cycle length */
-        for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
-        {
-            overallCycleLengthTrace[loopIndex] = overallCycleLengthTrace[loopIndex+1];
-        }
-        overallCycleLengthTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallCycleLength);
-        simCtrlFile = fopen("cl_trc","w");
-        for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
-        {
-            fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallCycleLengthTrace[loopIndex]);
-        }
-        fclose(simCtrlFile);
-		 /* grant size */
-        for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
-        {
-            overallGrantSizeTrace[loopIndex] = overallGrantSizeTrace[loopIndex+1];
-        }
-        overallGrantSizeTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallGrantSize);
-        simCtrlFile = fopen("gs_trc","w");
-        for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
-        {
-            fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallGrantSizeTrace[loopIndex]);
-        }
-        fclose(simCtrlFile);
-        /* Print heartbeat */
-        if(beat == 0)
+        /* stop the simulation */
+        set(SIM_END_EVENT);
+    	}
+    }
+    /* 
+     * Trace statistics 
+     */
+		/* queueing delay */
+    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
+    {
+      overallQueueDelayTrace[loopIndex] = overallQueueDelayTrace[loopIndex+1];
+      simTimeTrace[loopIndex] = simTimeTrace[loopIndex+1];
+    }
+    overallQueueDelayTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallQueueDelay);
+    simTimeTrace[MAX_TRACE_VALUES-1] = simtime();
+    simCtrlFile = fopen("od_trc","w");
+    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
+    {
+      fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallQueueDelayTrace[loopIndex]);
+    }
+    fclose(simCtrlFile);
+		/* cycle length */
+    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
+    {
+      overallCycleLengthTrace[loopIndex] = overallCycleLengthTrace[loopIndex+1];
+    }
+    overallCycleLengthTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallCycleLength);
+    simCtrlFile = fopen("cl_trc","w");
+    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
+    {
+      fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallCycleLengthTrace[loopIndex]);
+    }
+    fclose(simCtrlFile);
+		/* grant size */
+    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
+    {
+      overallGrantSizeTrace[loopIndex] = overallGrantSizeTrace[loopIndex+1];
+    }
+    overallGrantSizeTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallGrantSize);
+    simCtrlFile = fopen("gs_trc","w");
+    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
+    {
+      fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallGrantSizeTrace[loopIndex]);
+    }
+    fclose(simCtrlFile);
+    /* Print heartbeat */
+    if(beat == 0)
 		{
 			beat = 1;
 			printf("*");
@@ -876,7 +792,6 @@ void heartbeat_with_timetrace()
 			fflush(NULL);
 		}
 	}
-		
 }
 
 //##########################################################################################################################
@@ -909,7 +824,7 @@ void heartbeat()
 		/* Check for excessive buffer sizes */
         for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
         {
-    		if(onuAttrs[loopIndex].packetQueueSize > MAX_PKT_BUF_SIZE)
+    		if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
     		{
                 /* Fill out some context information */
                 dump_msg_buf[0] = '\0';
@@ -925,19 +840,6 @@ void heartbeat()
         if(beatCnt == 10)
         {
             beatCnt = 0; /* reset heart beat count */
-            for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-            {
-                /* If last grant to an ONU has been more than 10 seconds ago, it is likely not receiving grants */
-                if((simtime() - onuAttrs[loopIndex].prevGateTime) > 10)
-                {
-                    /* Fill out some context information */
-                    dump_msg_buf[0] = '\0';
-                    sprintf(dump_msg_buf,"Detected by heart beat process\n");
-                    sprintf(dump_msg_buf,"%sONU #%d has not received grant in more than 10 seconds.\n",dump_msg_buf,loopIndex);
-                    fatalErrorCode = FATAL_CAUSE_NO_GRANT;
-                    dump_sim_core();
-                }
-            }
         }
         /* Check external sim control */
         if((simCtrlFile = fopen("sim_ctrl","r")) != NULL)
@@ -1295,148 +1197,50 @@ void sim()
   	}
   
   
+  		  
+    tempStr[0] = '\0'; 
+    sprintf(tempStr, "Tx Time for OLT");
+    oltAttrs.transmitTimeTable = table(tempStr);
+    table_confidence(oltAttrs.transmitTimeTable);
+    tempStr[0] = '\0'; 
+    sprintf(tempStr, "Queue Time for OLT");
+    oltAttrs.queueTimeTable = table(tempStr);
+    table_confidence(oltAttrs.queueTimeTable);
+    tempStr[0] = '\0'; 
+    sprintf(tempStr, "Queue Length for OLT");
+    oltAttrs.queueLengthTable = table(tempStr);
+    table_confidence(oltAttrs.queueLengthTable);
+    tempStr[0] = '\0';
+    sprintf(tempStr, "Throughput for OLT");
+    oltAttrs.transmitThroughput = table(tempStr);
+    table_confidence(oltAttrs.transmitThroughput);
+    oltAttrs.zeroReqRate = meter("Zero Request Rate");
+    meter_confidence(oltAttrs.zeroReqRate);
+    oltAttrs.nonzeroReqRate = meter("Non-Zero Request Rate");
+    meter_confidence(oltAttrs.nonzeroReqRate);
+    /* setup ONU latency */
+    oltAttrs.latency = simParams.ONU_PROP; /* ONU distance of 10 to 20 km */
+    oltAttrs.rtt	= oltAttrs.latency*2;
+  
+
+  	/* Setup random number streams */
+  	oltAttrs.pktInterArrivalStream = create_stream();
+  	reseed(oltAttrs.pktInterArrivalStream,rand_seed++);
+  	oltAttrs.pktSizeStream = create_stream();
+  	reseed(oltAttrs.pktSizeStream,rand_seed++);
+  	oltAttrs.burstSizeStream = create_stream();
+  	reseed(oltAttrs.burstSizeStream,rand_seed++);
+  	/* Setup packet arrival mailboxes */
+  	tempStr[0] = '\0'; 
+  	sprintf(tempStr, "OLT pkt mb");
+  	oltAttrs.pktMailbox = mailbox(tempStr);
+  	
+    olt(); /* spawn the OLT process */
+  	  	
+    /* Spawn Traffic generator(s) for ONU */
   	/* Start the ONU processes */
   	for(i=0; i < simParams.NUM_ONU; i++)
   	{
-    	  /* 
-  		   * initialize ONU structures 
-  		   */
-  		  
-  		  tempStr[0] = '\0'; 
-  		  sprintf(tempStr, "Tx Time for ONU #%d", i);
-  		  onuAttrs[i].transmitTimeTable = table(tempStr);
-  		  table_confidence(onuAttrs[i].transmitTimeTable);
-  		  tempStr[0] = '\0'; 
-  		  sprintf(tempStr, "Queue Time for ONU #%d", i);
-  		  onuAttrs[i].queueTimeTable = table(tempStr);
-  		  table_confidence(onuAttrs[i].queueTimeTable);
-  		  tempStr[0] = '\0'; 
-  		  sprintf(tempStr, "Queue Length for ONU #%d", i);
-  		  onuAttrs[i].queueLengthTable = table(tempStr);
-  		  table_confidence(onuAttrs[i].queueLengthTable);
-  		  tempStr[0] = '\0';
-  		  sprintf(tempStr, "Throughput for ONU #%d", i);
-  		  onuAttrs[i].transmitThroughput = table(tempStr);
-  		  table_confidence(onuAttrs[i].transmitThroughput);
-        onuAttrs[i].zeroReqRate = meter("Zero Request Rate");
-        meter_confidence(onuAttrs[i].zeroReqRate);
-        onuAttrs[i].nonzeroReqRate = meter("Non-Zero Request Rate");
-        meter_confidence(onuAttrs[i].nonzeroReqRate);
-  		  /* setup ONU latency */
-  		  onuAttrs[i].latency = simParams.ONU_PROP[i]; /* ONU distance of 10 to 20 km */
-  		  onuAttrs[i].rtt	= onuAttrs[i].latency*2;
-  		  /*
-  		   * Setup ONU WDM information
-  		   */
-        onuAttrs[i].numSupportedLambdas = 0;
-  		  if(i < simParams.NUM_WDM_ONU)
-  		  {
-  		    	/* Setup simParams.NUM_WDM_ONU worth of ONUs as WDM supporting */
-  		    	for(j=0;j < simParams.NUM_LAMBDAS; j++)
-  		    	{
-  		    		  onuAttrs[i].supportedLambdas[j] = j;
-               	onuAttrs[i].supportedLambdasMap[j] = LAMBDA_TRUE;
-  		    	}
-  		    	onuAttrs[i].supportedLambdas[j] = LAMBDA_NULL;
-            onuAttrs[i].numSupportedLambdas = j;
-  		    	onuAttrs[i].tunedLambda = 0; /* If tunable, initially tuned to lambda #0 */
-  		    	if(simParams.WDM_TYPE == WDM_TUNABLE)
-  		    	{
-  		    	  	onuAttrs[i].wdmType = WDM_TUNABLE;
-  		    	  	onuAttrs[i].tuningTime = simParams.TUNING_TIME;
-  		    	}
-  		    	else
-  		    	{
-  		    	  	onuAttrs[i].wdmType = WDM_FIXED;
-  		    	}
-  		  }
-  		  else if(i < (simParams.NUM_WDM_ONU + simParams.NUM_LH_WDM_ONU))
-        {
-  			    /* Setup simParams.NUM_WDM_ONU worth of ONUs as WDM supporting */
-  			    for(j=0;j < (simParams.NUM_LAMBDAS)/2; j++)
-  			    {
-  			      	onuAttrs[i].supportedLambdas[j] = j;
-  			      	onuAttrs[i].supportedLambdasMap[j] = LAMBDA_TRUE;
-  			    }
-  			    onuAttrs[i].supportedLambdas[j] = LAMBDA_NULL;
-                  		onuAttrs[i].numSupportedLambdas = j;
-  			    for(j=(simParams.NUM_LAMBDAS)/2;j < simParams.NUM_LAMBDAS; j++)
-  			    {
-  			    	  onuAttrs[i].supportedLambdasMap[j] = LAMBDA_FALSE;
-  			    }
-  			    onuAttrs[i].tunedLambda = 0; /* If tunable, initially tuned to lambda #0 */
-  			    if(simParams.WDM_TYPE == WDM_TUNABLE)
-  			    {
-  			    	  onuAttrs[i].wdmType = WDM_TUNABLE;
-  			    	  onuAttrs[i].tuningTime = simParams.TUNING_TIME;
-  			    }
-  			    else
-  			    {
-  			    	  onuAttrs[i].wdmType = WDM_FIXED;
-  			    }
-  		  }
-  		  else if(i < (simParams.NUM_WDM_ONU + simParams.NUM_LH_WDM_ONU + simParams.NUM_UH_WDM_ONU))
-  	    {
-  		    	/* Setup simParams.NUM_WDM_ONU worth of ONUs as WDM supporting */
-  		    	for(j=0;j < (simParams.NUM_LAMBDAS)/2; j++)
-  		    	{
-  		    		  onuAttrs[i].supportedLambdasMap[j] = LAMBDA_FALSE;
-  		    	}
-  		    	for(j=(simParams.NUM_LAMBDAS)/2;j < simParams.NUM_LAMBDAS; j++)
-  		    	{
-  		    		  onuAttrs[i].supportedLambdas[j-(simParams.NUM_LAMBDAS)/2] = j;
-  		    		  onuAttrs[i].supportedLambdasMap[j] = LAMBDA_TRUE;
-  		    	}
-  		    	onuAttrs[i].supportedLambdas[j-(simParams.NUM_LAMBDAS)/2] = LAMBDA_NULL;
-            onuAttrs[i].numSupportedLambdas = j-(simParams.NUM_LAMBDAS)/2;
-  		    	onuAttrs[i].tunedLambda = 0; /* If tunable, initially tuned to lambda #0 */
-  		    	if(simParams.WDM_TYPE == WDM_TUNABLE)
-  		    	{
-  		    		  onuAttrs[i].wdmType = WDM_TUNABLE;
-  		    		  onuAttrs[i].tuningTime = simParams.TUNING_TIME;
-  		    	}
-  		    	else
-  		    	{
-  		    		  onuAttrs[i].wdmType = WDM_FIXED;
-  		    	}
-        }
-        else
-  		  {
-  		    	onuAttrs[i].wdmType = WDM_NONE;
-  		    	/* the rest only support a single wavelength */
-  		    	onuAttrs[i].supportedLambdas[0] = 0;
-  		    	onuAttrs[i].supportedLambdasMap[0] = LAMBDA_TRUE;
-           	for(j=1;j < simParams.NUM_LAMBDAS+1; j++)
-            {
-                onuAttrs[i].supportedLambdas[j] = LAMBDA_NULL;
-                onuAttrs[i].supportedLambdasMap[j] = LAMBDA_FALSE;
-            }
-            onuAttrs[i].numSupportedLambdas = 1;
-        }
-  		
-  	  	/* Setup random number streams */
-  	  	onuAttrs[i].pktInterArrivalStream = create_stream();
-  	  	reseed(onuAttrs[i].pktInterArrivalStream,rand_seed++);
-  	  	onuAttrs[i].pktSizeStream = create_stream();
-  	  	reseed(onuAttrs[i].pktSizeStream,rand_seed++);
-  	  	onuAttrs[i].burstSizeStream = create_stream();\
-  	  	reseed(onuAttrs[i].burstSizeStream,rand_seed++);
-  	  	/* Setup packet arrival mailboxes */
-  	  	tempStr[0] = '\0'; 
-  	  	sprintf(tempStr, "ONU #%d pkt mb", i);
-  	  	onuAttrs[i].pktMailbox = mailbox(tempStr);
-  	  	for(j=0;j < simParams.NUM_LAMBDAS; j++)
-  	  	{
-  	  		  if(onuAttrs[i].supportedLambdasMap[j] == LAMBDA_TRUE)
-  	  		  {
-  	  		    	/* Setup GATE msg mailboxes */
-  	  		    	tempStr[0] = '\0'; 
-  	  		    	sprintf(tempStr, "ONU #%d,L#%d grant mb", i,j);
-  	  		    	onuAttrs[i].grantMailbox[j] = mailbox(tempStr);
-  	  		    	olt(i,j); /* spawn an ONU process for each wavelength */
-  	  		  }
-  	  	}
-  	  	/* Spawn Traffic generator(s) for ONU */
   	  	switch(simParams.TRAFFIC_TYPE)
   	  	{
   	  	  	case TRAFFIC_POISSON:
@@ -1451,13 +1255,9 @@ void sim()
   	  	    		break;
   	  	  	default:
   	  	  		  break;
-  	  	}
+  	   	}
   	}
   	
-  	if(simParams.OLT_TYPE == OLT_LEAST_ASSIGNED) lambda_assignment();
-  	
-  	for(i=0; i < simParams.NUM_ONU; i++) printf("ONU #%d assigned to lambda #%d\n", i, onuAttrs[i].tunedLambda);
-  
   	/* Start the new ONU process */
   	onu();
   
@@ -2300,160 +2100,17 @@ void read_sim_cfg_file()
 #endif
 	}
 	
-	//find_num_layers();
-	//find_num_frames();
-	
 	// Test Variables read_sim_cfg_file_finish
 	test_vars.read_sim_cfg_file_finish++;
 	test_var_print();
-	TSprint("SCALABLE_VIDEO_ON: %d\n", simParams.SCALABLE_VIDEO_TRAFFIC);
-	TSprint("SCALABLE_VIDEO_DROPPING: %d\n", simParams.SCALABLE_VIDEO_DROPPING_ALGORITHM);
-	TSprint("TOTAL_NUM_LAYERS: %d\n", simParams.SCALABLE_VIDEO_NUM_LAYERS);
-	TSprint("SV_DROP_LAYER_THRESHOLD: %d\n", simParams.SV_DROP_LAYER_THRESHOLD);
-	TSprint("SV_DROP_SENSITIVITY: %0.2f\n", simParams.SV_DROP_SENSITIVITY);
-	TSprint("SV_DROP_NUM_MA_VALUES: %d\n", simParams.SV_DROP_NUM_VALUES_FOR_MA);
-	TSprint("SV_MIN_BOUND: %f\n", simParams.SV_DROP_MIN_BOUND);
-	TSprint("SV_MAX_BOUND: %f\n", simParams.SV_DROP_MAX_BOUND);
-	TSprint("Max num of Frames: %d\n", (int)onuAttrs[0].maxFrameCount);
 	TSprint("read_sim_cfg_file_finish\n\n");
 }
 
-void find_num_layers()
-{
-	// int		flag = -1;
-	char 	prevChar[10],
-			prevPrevChar[10],
-			prevPrevPrevChar[10],
-			mystring[LINE_LENGTH],
-			c = 'A';
-	int		ENHANCE_LAYERS_CHECK = 0;
-	int 	layer,
-			enhanceLayers = 0,
-			lastFrame = 0,
-			poundCheck = 0,
-			temp = 0;
-	FILE*	inFilePtr;
-	
-	if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_ON)
-	{
-		// TSprint("Flag 1\n");
-		inFilePtr = fopen(simParams.VIDEO_TRACE_FILE, "r");
-		if (inFilePtr == NULL)
-			TSprint("Error opening(1) %s \n", simParams.VIDEO_TRACE_FILE);
-		// while (flag == -1)
-			// flag = get_line2(inFilePtr, mystring, LINE_LENGTH);
-		// TSprint("Flag 2\t c=%d\n", c);
-		while (c != EOF)
-		{
-			c = fgetc(inFilePtr);
-			if (c == '#') {
-				poundCheck = 1;
-			}
-			if (c == '\n')
-			{
-				if (poundCheck == 0) 
-				{
-					// TSprint("Entered if Statement #1\n");
-					mystring[0] = '\0';
-					get_line(inFilePtr, mystring, LINE_LENGTH);
-					// TSprint("Passed while loop\n");
-					temp = atoi(mystring);
-					// TSprint("Temp = %d\n", temp);
-					if (temp > lastFrame)
-						lastFrame = temp;
-					//if (prevPrevChar[0] == -1)
-						//layer = 0;
-					//else 
-					if ((prevChar[0] >= '0') && (prevChar[0] <= '9')) {
-						layer = atoi(prevChar);
-						// TSprint("Checkpoint_1\n");
-					}
-					else {
-						if ((prevPrevChar[0] >= '0') && (prevPrevChar[0] <= '9')) {
-						layer = atoi(prevPrevChar);
-						// TSprint("Checkpoint_2\n");
-						}
-						else {
-							if ((prevPrevPrevChar[0] >= '0') && (prevPrevPrevChar[0] <= '9')) {
-								layer = atoi(prevPrevPrevChar);
-								// TSprint("Checkpoint_3\n");
-							}
-						}
-					}
-					// else
-						// TSprint("The layer data is not being reached.\n");
-					if (ENHANCE_LAYERS_CHECK == 0) /* David (Set the number of enhancement layers.) */
-					{
-						// TSprint("layer=%d\ttemp=%d\tc=%c\tprev=%c\tprevPrev=%c\tprevPrevPrev=%c\n\n", layer, temp, c, prevChar[0], prevPrevChar[0], prevPrevPrevChar[0]);
-						if (layer > enhanceLayers)
-							enhanceLayers = layer;
-						else if (layer < enhanceLayers)
-						{
-							simParams.SCALABLE_VIDEO_NUM_LAYERS = enhanceLayers + 1;
-							ENHANCE_LAYERS_CHECK += 1; /* This ensures that the loop only sets the number of enhancement layers once. */
-							// TSprint("Finished\n");
-						}
-					}
-					else break;
-				}
-				if (poundCheck == 1)
-					poundCheck = 0;
-			}
-			prevPrevPrevChar[0] = prevPrevChar[0];
-			prevPrevChar[0] = prevChar[0];		// The correct layer data is two chars back from the '\n'
-			//if (c == -1)
-				//prevChar[0] = 0;
-			//else 
-			prevChar[0] = c;
-		}
-		fclose(inFilePtr);
-	}
-	return;
-}
-
-void find_num_frames()
-{
-	FILE*	inFilePtr;
-	char	mystring[LINE_LENGTH];
-	int		flag = 0,
-			lastFlag = 0,
-			last2Flag = 0,
-			last3Flag = 0,
-			Ah,
-			iaa;
-	double	tempFrameCount = -1;
-
-	inFilePtr = fopen(simParams.VIDEO_TRACE_FILE, "r");
-	if (inFilePtr == NULL)
-		TSprint("Error opening(2) %s \n", simParams.VIDEO_TRACE_FILE);
-	
-	while (flag != 2000)
-	{
-		if ( (flag == 500 && lastFlag == 1000) || 
-		(flag == 500 && lastFlag == 250 && last2Flag == 1000) || 
-		(flag == 500 && lastFlag == 250 && last2Flag == 250 && last3Flag == 1000) )
-		{
-			tempFrameCount = (double)atoi(mystring);
-		}
-		last3Flag = last2Flag;
-		last2Flag = lastFlag;
-		lastFlag = flag;
-		flag = get_line2(inFilePtr, mystring, LINE_LENGTH);
-	}
-	for (iaa = 0; iaa < simParams.NUM_ONU; iaa++)
-		onuAttrs[iaa].maxFrameCount = tempFrameCount + 1;
-	Ah = fclose(inFilePtr);
-	if (Ah != 0)
-		TSprint("Error closing %s \n", simParams.VIDEO_TRACE_FILE);
-	return;
-}
 
 void estimate_hist_max()
 {
-#ifdef DEBUG_TRC
-    printf("Calculate Histogram Maximum Estimators\n");
-    fflush(NULL);
-#endif
+    //printf("Calculate Histogram Maximum Estimators\n");
+    //fflush(NULL);
 
     overallQueueDelayEst.maxEst = table_max(overallQueueDelay)*1.2;
     heavyQueueDelayEst.maxEst = table_max(heavyQueueDelay);
@@ -2476,75 +2133,29 @@ void estimate_hist_max()
     lightRptToGateTimeEst.maxEst = table_max(lightRptToGateTime);
     numONUSchedEst.maxEst = table_max(numONUSched);
 
-#ifdef DEBUG_TRC
-    printf("overallQueueDelayEst.maxEst = %g\n",overallQueueDelayEst.maxEst);
-    printf("overallQueueDelay table_cnt = %ld, table_min = %g, table_max = %g\n",table_cnt(overallQueueDelay),table_min(overallQueueDelay),table_max(overallQueueDelay));
-    printf("heavyQueueDelayEst.maxEst = %g\n",heavyQueueDelayEst.maxEst);
-    printf("lightQueueDelayEst.maxEst = %g\n",lightQueueDelayEst.maxEst);
-    printf("overallQueueLengthEst.maxEst = %g\n",overallQueueLengthEst.maxEst);
-    printf("heavyQueueLengthEst.maxEst = %g\n",heavyQueueLengthEst.maxEst);
-    printf("lightQueueLengthEst.maxEst = %g\n",lightQueueLengthEst.maxEst);
-    printf("overallGrantSizeEst.maxEst = %g\n",overallGrantSizeEst.maxEst);
-    printf("overallGrantSizePktEst.maxEst = %g\n",overallGrantSizePktEst.maxEst);
-    printf("heavyGrantSizeEst.maxEst = %g\n",heavyGrantSizeEst.maxEst);
-    printf("lightGrantSizeEst.maxEst = %g\n",lightGrantSizeEst.maxEst);
-    printf("overallCycleLengthEst.maxEst = %g\n",overallCycleLengthEst.maxEst);
-    printf("heavyCycleLengthEst.maxEst = %g\n",heavyCycleLengthEst.maxEst);
-    printf("lightCycleLengthEst.maxEst = %g\n",lightCycleLengthEst.maxEst);
-    printf("overallRptToSchedTimeEst.maxEst = %g\n",overallRptToSchedTimeEst.maxEst);
-    printf("heavyRptToSchedTimeEst.maxEst = %g\n",heavyRptToSchedTimeEst.maxEst);
-    printf("lightRptToSchedTimeEst.maxEst = %g\n",lightRptToSchedTimeEst.maxEst);
-    printf("overallRptToGateTimeEst.maxEst = %g\n",overallRptToGateTimeEst.maxEst);
-    printf("heavyRptToGateTimeEst.maxEst = %g\n",heavyRptToGateTimeEst.maxEst);
-    printf("lightRptToGateTimeEst.maxEst = %g\n",lightRptToGateTimeEst.maxEst);
-    printf("numONUSchedEst.maxEst = %g\n",numONUSchedEst.maxEst);
-    printf("Calculate Histogram Maximum Estimators\n");
-    fflush(NULL);
-#endif
-
-#if 0
-    overallQueueDelayEst.minEst = table_min(overallQueueDelay);
-    heavyQueueDelayEst.minEst = table_min(heavyQueueDelay);
-    lightQueueDelayEst.minEst = table_min(lightQueueDelay);
-    overallQueueLengthEst.minEst = table_min(overallQueueLength);
-    heavyQueueLengthEst.minEst = table_min(heavyQueueLength);
-    lightQueueLengthEst.minEst = table_min(lightQueueLength);
-    overallGrantSizeEst.minEst = table_min(overallGrantSize);
-    overallGrantSizePktEst.minEst = table_min(overallGrantSizePkt);
-    heavyGrantSizeEst.minEst = table_min(heavyGrantSize);
-    lightGrantSizeEst.minEst = table_min(lightGrantSize);
-    overallCycleLengthEst.minEst = table_min(overallCycleLength);
-    heavyCycleLengthEst.minEst = table_min(heavyCycleLength);
-    lightCycleLengthEst.minEst = table_min(lightCycleLength);
-    overallRptToSchedTimeEst.minEst = table_min(overallRptToSchedTime);
-    heavyRptToSchedTimeEst.minEst = table_min(heavyRptToSchedTime);
-    lightRptToSchedTimeEst.minEst = table_min(lightRptToSchedTime);
-    overallRptToGateTimeEst.minEst = table_min(overallRptToGateTime);
-    heavyRptToGateTimeEst.minEst = table_min(heavyRptToGateTime);
-    lightRptToGateTimeEst.minEst = table_min(lightRptToGateTime);
-    numONUSchedEst.minEst = table_min(numONUSched);
-
-    overallQueueDelayEst.meanEst = table_mean(overallQueueDelay);
-    heavyQueueDelayEst.meanEst = table_mean(heavyQueueDelay);
-    lightQueueDelayEst.meanEst = table_mean(lightQueueDelay);
-    overallQueueLengthEst.meanEst = table_mean(overallQueueLength);
-    heavyQueueLengthEst.meanEst = table_mean(heavyQueueLength);
-    lightQueueLengthEst.meanEst = table_mean(lightQueueLength);
-    overallGrantSizeEst.meanEst = table_mean(overallGrantSize);
-    overallGrantSizePktEst.meanEst = table_mean(overallGrantSizePkt);
-    heavyGrantSizeEst.meanEst = table_mean(heavyGrantSize);
-    lightGrantSizeEst.meanEst = table_mean(lightGrantSize);
-    overallCycleLengthEst.meanEst = table_mean(overallCycleLength);
-    heavyCycleLengthEst.meanEst = table_mean(heavyCycleLength);
-    lightCycleLengthEst.meanEst = table_mean(lightCycleLength);
-    overallRptToSchedTimeEst.meanEst = table_mean(overallRptToSchedTime);
-    heavyRptToSchedTimeEst.meanEst = table_mean(heavyRptToSchedTime);
-    lightRptToSchedTimeEst.meanEst = table_mean(lightRptToSchedTime);
-    overallRptToGateTimeEst.meanEst = table_mean(overallRptToGateTime);
-    heavyRptToGateTimeEst.meanEst = table_mean(heavyRptToGateTime);
-    lightRptToGateTimeEst.meanEst = table_mean(lightRptToGateTime);
-    numONUSchedEst.meanEst = table_mean(numONUSched);
-#endif
+    //printf("overallQueueDelayEst.maxEst = %g\n",overallQueueDelayEst.maxEst);
+    //printf("overallQueueDelay table_cnt = %ld, table_min = %g, table_max = %g\n",table_cnt(overallQueueDelay),table_min(overallQueueDelay),table_max(overallQueueDelay));
+    //printf("heavyQueueDelayEst.maxEst = %g\n",heavyQueueDelayEst.maxEst);
+    //printf("lightQueueDelayEst.maxEst = %g\n",lightQueueDelayEst.maxEst);
+    //printf("overallQueueLengthEst.maxEst = %g\n",overallQueueLengthEst.maxEst);
+    //printf("heavyQueueLengthEst.maxEst = %g\n",heavyQueueLengthEst.maxEst);
+    //printf("lightQueueLengthEst.maxEst = %g\n",lightQueueLengthEst.maxEst);
+    //printf("overallGrantSizeEst.maxEst = %g\n",overallGrantSizeEst.maxEst);
+    //printf("overallGrantSizePktEst.maxEst = %g\n",overallGrantSizePktEst.maxEst);
+    //printf("heavyGrantSizeEst.maxEst = %g\n",heavyGrantSizeEst.maxEst);
+    //printf("lightGrantSizeEst.maxEst = %g\n",lightGrantSizeEst.maxEst);
+    //printf("overallCycleLengthEst.maxEst = %g\n",overallCycleLengthEst.maxEst);
+    //printf("heavyCycleLengthEst.maxEst = %g\n",heavyCycleLengthEst.maxEst);
+    //printf("lightCycleLengthEst.maxEst = %g\n",lightCycleLengthEst.maxEst);
+    //printf("overallRptToSchedTimeEst.maxEst = %g\n",overallRptToSchedTimeEst.maxEst);
+    //printf("heavyRptToSchedTimeEst.maxEst = %g\n",heavyRptToSchedTimeEst.maxEst);
+    //printf("lightRptToSchedTimeEst.maxEst = %g\n",lightRptToSchedTimeEst.maxEst);
+    //printf("overallRptToGateTimeEst.maxEst = %g\n",overallRptToGateTimeEst.maxEst);
+    //printf("heavyRptToGateTimeEst.maxEst = %g\n",heavyRptToGateTimeEst.maxEst);
+    //printf("lightRptToGateTimeEst.maxEst = %g\n",lightRptToGateTimeEst.maxEst);
+    //printf("numONUSchedEst.maxEst = %g\n",numONUSchedEst.maxEst);
+    //printf("Calculate Histogram Maximum Estimators\n");
+    //fflush(NULL);
 
 }
 
@@ -2597,29 +2208,29 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
 {
     int     loopIndex;
     char	filename_suffix[100];
-	char	filename_str[150];
+	  char	filename_str[150];
     char    double_str[15];
     char    *charPtr;
 
-    FILE *odFile, *vodFile, *vodsFile, *vugFile, *vrFile, *vrmFile, *hdFile, *ldFile, *olFile, *hlFile, *llFile, *statsFile;
+    FILE *odFile, *hdFile, *ldFile, *olFile, *hlFile, *llFile, *statsFile;
     FILE *qdFile;
-	FILE *odxlFile, *hdxlFile, *ldxlFile, *olxlFile, *hlxlFile, *llxlFile;
-	FILE *clFile, *rsFile, *gsFile, *gspFile, *noFile;
+	  FILE *odxlFile, *hdxlFile, *ldxlFile, *olxlFile, *hlxlFile, *llxlFile;
+  	FILE *clFile, *rsFile, *gsFile, *gspFile, *noFile;
     FILE *cllFile, *clhFile, *rslFile, *rshFile, *gslFile, *gshFile;
     FILE *nzFile, *nzlFile, *nzhFile;
     FILE *rgFile, *rglFile, *rghFile;
     FILE *odoFile, *odmnFile, *odmxFile, *clmnFile, *clmxFile;
-	FILE *nomxFile;
+	  FILE *nomxFile;
     FILE *lbFile;
     FILE *srFile;
     FILE *srmxFile;
-	FILE *utFile[MAX_LAMBDAS];
-	FILE *tpFile[MAX_LAMBDAS];
+	  FILE *utFile[MAX_LAMBDAS];
+	  FILE *tpFile[MAX_LAMBDAS];
     FILE *tpoFile[MAX_ONU];
     FILE *tfsFile, *tfFile;
     FILE *cr1File, *cr2File, *mcrFile;
     FILE *ebFile, *ebpoFile;
-	FILE *utxlFile[MAX_LAMBDAS];
+	  FILE *utxlFile[MAX_LAMBDAS];
     FILE *odHistFile, *clHistFile, *gspHistFile;
     FILE *pdFile, *plFile, *clpFile;
 
@@ -2643,238 +2254,7 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
             break;
     }
 
-	if(simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON)
-	{
-		strcat(filename_suffix, "vid_");
-		
-		if(simParams.VIDEO_PREDICTION == VIDEO_PREDICTION_ON) sprintf(filename_suffix, "%s%s_", filename_suffix, simParams.PREDICTION_TYPE);
-		else strcat(filename_suffix, "Poff_");
-		
-		if(simParams.TIME_SHIFT == 0) strcat(filename_suffix, "0_");
-		else sprintf(filename_suffix, "%s%2.2lf_", filename_suffix, simParams.TIME_SHIFT); 
-		
-	}
-
-    switch(simParams.OLT_TYPE)
-    {
-        case OLT_IPACT:
-            strcat(filename_suffix, "ipt_");
-            break;
-        case OLT_IPACT_PSF:
-            strcat(filename_suffix, "psf_");
-            break;
-        case OLT_WDM_IPACT:
-            strcat(filename_suffix, "wipt_");
-            break;
-        case OLT_LEAST_ASSIGNED:
-            strcat(filename_suffix, "la_");
-            break;
-        case OLT_APS:
-            strcat(filename_suffix, "aps_");
-            break;
-        case OLT_LFJ:
-            strcat(filename_suffix, "lfj_");
-            break;
-        case OLT_LFJ_LPT:
-            strcat(filename_suffix, "lfjlpt_");
-            break;
-        case OLT_LFJ_SPT:
-            strcat(filename_suffix, "lfjspt_");
-            break;
-        case OLT_LFJ_LNF:
-            strcat(filename_suffix, "lfjlnf_");
-            break;
-        case OLT_SPD:
-            strcat(filename_suffix, "spd_");
-            break;
-        case OLT_LPD:
-            strcat(filename_suffix, "lpd_");
-            break;
-        case OLT_EAF:
-            strcat(filename_suffix, "eaf_");
-            break;
-        case OLT_EAAF:
-            strcat(filename_suffix, "eaaf_");
-            break;
-        case OLT_WBM:
-            strcat(filename_suffix, "wbm_");
-            break;
-        case OLT_WBM_LPT:
-            strcat(filename_suffix, "wbmlpt_");
-            break;
-        case OLT_WBM_LNF:
-            strcat(filename_suffix, "wbmlnf_");
-            break;
-        case OLT_WBM_EAAF:
-            strcat(filename_suffix, "wbmeaaf_");
-            break;
-        case OLT_ONLINE_NASC:
-            strcat(filename_suffix, "nasc_");
-            break;
-        case OLT_ONLINE_INTERVAL_LFJ_LPT:
-            strcat(filename_suffix, "intvl_lfjlpt_");
-            break;
-        case OLT_ONLINE_INTERVAL_LFJ_SPT:
-            strcat(filename_suffix, "intvl_lfjspt_");
-            break;
-        case OLT_ONLINE_INTERVAL_LFJ_LNF:
-            strcat(filename_suffix, "intvl_lfjlnf_");
-            break;
-        case OLT_ONLINE_INTERVAL_WBM:
-            strcat(filename_suffix, "intvl_wbm_");
-            break;
-        case OLT_ONLINE_INTERVAL_WBM_LPT:
-            strcat(filename_suffix, "intvl_wbmlpt_");
-            break;
-        case OLT_ONLINE_INTERVAL_WBM_LNF:
-            strcat(filename_suffix, "intvl_wbmlnf_");
-            break;
-        case OLT_ONLINE_INTERVAL_WBM_EAAF:
-            strcat(filename_suffix, "intvl_wbmeaaf_");
-            break;
-        case OLT_ONLINE_INTERVAL_EAF:
-            strcat(filename_suffix, "intvl_eaf_");
-            break;
-        case OLT_ONLINE_INTERVAL_EAAF:
-            strcat(filename_suffix, "intvl_eaaf_");
-            break;
-        case OLT_ONLINE_JIT_LFJ_LPT:
-            strcat(filename_suffix, "jit_lfjlpt_");
-            break;
-        case OLT_ONLINE_JIT_LFJ_LNF:
-            strcat(filename_suffix, "jit_lfjlnf_");
-            break;
-        case OLT_ONLINE_JIT_LFJ_SPT:
-            strcat(filename_suffix, "jit_lfjspt_");
-            break;
-        case OLT_ONLINE_JIT_WBM:
-            strcat(filename_suffix, "jit_wbm_");
-            break;
-        case OLT_ONLINE_JIT_WBM_LPT:
-            strcat(filename_suffix, "jit_wbmlpt_");
-            break;
-        case OLT_ONLINE_JIT_WBM_LNF:
-            strcat(filename_suffix, "jit_wbmlnf_");
-            break;
-        case OLT_ONLINE_JIT_WBM_EAAF:
-            strcat(filename_suffix, "jit_wbmeaaf_");
-            break;
-        case OLT_ONLINE_JIT_EAF:
-            strcat(filename_suffix, "jit_eaf_");
-            break;
-        case OLT_ONLINE_JIT_EAAF:
-            strcat(filename_suffix, "jit_eaaf_");
-            break;
-        case OLT_ONLINE_JIT_TEST:
-            strcat(filename_suffix, "jit_test_");
-            break;
-        case OLT_ONLINE_JIT_SPD:
-            strcat(filename_suffix, "jit_spd_");
-            break;
-        case OLT_ONLINE_JIT_LPD:
-            strcat(filename_suffix, "jit_lpd_");
-            break;
-    }
-    switch(simParams.DBA_TYPE)
-    {
-        case DBA_FIXED:
-            double_str[0] = '\0';
-            sprintf(double_str, "%d", simParams.FIXED_GRANT_SIZE);
-            sprintf(filename_suffix, "%sfixed%s_", filename_suffix, double_str);
-            break;
-        case DBA_GATED:
-            strcat(filename_suffix, "gated_");
-            break;
-        case DBA_LIMITED_GATE:
-            double_str[0] = '\0';
-            sprintf(double_str, "%d", simParams.MAX_GRANT_SIZE);
-            sprintf(filename_suffix, "%slimited%s_", filename_suffix, double_str);
-            break;
-        case DBA_EXCESS:
-            double_str[0] = '\0';
-            sprintf(double_str, "%d", simParams.MAX_GRANT_SIZE);
-            sprintf(filename_suffix, "%sexcess%s_", filename_suffix, double_str);
-            break;
-
-    }
-
-    switch(simParams.VIDEO_DBA_TYPE)
-    {
-        case VIDEO_DBA_FIXED:
-            //double_str[0] = '\0';
-            //sprintf(double_str, "%d", simParams.FIXED_GRANT_SIZE);
-            //sprintf(filename_suffix, "%sVfixed%s_", filename_suffix, double_str);
-            strcat(filename_suffix, "Vfixed_");
-            break;
-        case VIDEO_DBA_GATED:
-            strcat(filename_suffix, "Vgated_");
-            break;
-        case VIDEO_DBA_LIMITED_GATE:
-            //double_str[0] = '\0';
-            //sprintf(double_str, "%d", simParams.MAX_GRANT_SIZE);
-            //sprintf(filename_suffix, "%sVlimited%s_", filename_suffix, double_str);
-            strcat(filename_suffix, "Vlimited_");
-            break;
-    }
-    
-    
-    switch(simParams.OLT_TYPE)
-    {
-    case OLT_WBM:
-    case OLT_WBM_LPT:
-    case OLT_WBM_LNF:
-    case OLT_WBM_EAAF:
-    case OLT_ONLINE_JIT_WBM:
-    case OLT_ONLINE_JIT_WBM_LPT:
-    case OLT_ONLINE_JIT_WBM_LNF:
-    case OLT_ONLINE_JIT_WBM_EAAF:
-    case OLT_ONLINE_INTERVAL_WBM:
-    case OLT_ONLINE_INTERVAL_WBM_LPT:
-    case OLT_ONLINE_INTERVAL_WBM_LNF:
-    case OLT_ONLINE_INTERVAL_WBM_EAAF:
-        double_str[0] = '\0';
-        sprintf(double_str, "%g", simParams.AVAIL_COST_WEIGHT);
-        charPtr = strchr(double_str, '.');
-        if(charPtr != NULL)
-        {
-            *charPtr = '_';
-        }
-        sprintf(filename_suffix, "%sacw_%s_", filename_suffix, double_str);
-        break;
-    }
-    switch(simParams.OLT_TYPE)
-    {
-    case OLT_ONLINE_JIT_LFJ_LPT:
-    case OLT_ONLINE_JIT_LFJ_LNF:
-    case OLT_ONLINE_JIT_LFJ_SPT:
-    case OLT_ONLINE_JIT_WBM:
-    case OLT_ONLINE_JIT_WBM_LPT:
-    case OLT_ONLINE_JIT_WBM_LNF:
-    case OLT_ONLINE_JIT_WBM_EAAF:
-    case OLT_ONLINE_JIT_EAF:
-    case OLT_ONLINE_JIT_EAAF:
-    case OLT_ONLINE_JIT_TEST:
-    case OLT_ONLINE_JIT_SPD:
-    case OLT_ONLINE_JIT_LPD:
-        sprintf(filename_suffix, "%sst%d_", filename_suffix, simParams.STARVE_THRESH);
-        break;
-    }
-    if(simParams.SCHEDULER_MAX_WINDOW == 1)
-    {
-            strcat(filename_suffix, "mw_");
-    }
-    switch(simParams.WDM_TYPE)
-    {
-        case WDM_FIXED:
-            strcat(filename_suffix, "fx_");
-            break;
-        case WDM_TUNABLE:
-            strcat(filename_suffix, "tn_");
-            break;
-    }
     sprintf(filename_suffix, "%s%do_", filename_suffix, simParams.NUM_ONU);
-    sprintf(filename_suffix, "%s%dwo_", filename_suffix, simParams.NUM_WDM_ONU);
-    sprintf(filename_suffix, "%s%dw", filename_suffix, numLambdas);
     
     /*
      * Open files
@@ -2882,25 +2262,6 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
     filename_str[0]	= '\0';
     sprintf(filename_str, "od_%s", filename_suffix);
     odFile = fopen(filename_str,"a");
-    
-    if(simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON)
-    {
-	filename_str[0]	= '\0';
-	sprintf(filename_str, "vod_%s", filename_suffix);
-	vodFile = fopen(filename_str,"a");
-	filename_str[0]	= '\0';
-	sprintf(filename_str, "vods_%s", filename_suffix);
-	vodsFile = fopen(filename_str,"a");
-	filename_str[0]	= '\0';	
-	sprintf(filename_str, "vug_%s", filename_suffix);
-	vugFile = fopen(filename_str,"a");
-	filename_str[0]	= '\0';
-	sprintf(filename_str, "vr_%s", filename_suffix);
-	vrFile = fopen(filename_str,"a");
-	filename_str[0]	= '\0';
-	sprintf(filename_str, "vrmax_%s", filename_suffix);
-	vrmFile = fopen(filename_str,"a");
-    }
     
     filename_str[0]	= '\0';
     sprintf(filename_str, "qd_%s", filename_suffix);
@@ -3048,20 +2409,6 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
     llxlFile	= fopen(filename_str,"a");
     statsFile	= fopen("stats","a");
     
-    /* Open files for reporting wavelength utilization */
-    for(loopIndex=0; loopIndex < numLambdas; loopIndex++)
-    {
-        filename_str[0]	= '\0';
-        sprintf(filename_str, "ut%d_%s", loopIndex+1, filename_suffix);
-        utFile[loopIndex] = fopen(filename_str,"a");
-        filename_str[0]	= '\0';
-        sprintf(filename_str, "tp%d_%s", loopIndex+1, filename_suffix);
-        tpFile[loopIndex] = fopen(filename_str,"a");
-        filename_str[0]	= '\0';
-        sprintf(filename_str, "ut%d_%s_xl", loopIndex+1, filename_suffix);
-        utxlFile[loopIndex] = fopen(filename_str,"a");
-    }				
-    
     /* Open files for throughput per onu (tpo) calculations */
     for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
     {
@@ -3094,12 +2441,6 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
     filename_str[0]	= '\0';
     sprintf(filename_str, "ebpo_%s", filename_suffix);
     ebpoFile = fopen(filename_str,"a");
-
-
-    /* Hack */
-    //trafficLoad = simParams.PIPG_LOAD;
-
-    fprintf(statsFile,"wdm_onu=%d,load=%f,lambdas=%d\n", simParams.NUM_WDM_ONU, trafficLoad, numLambdas);
 
     fprintf(statsFile,"rand_seed_base=%ld\n", simParams.RAND_SEED);
     
@@ -3175,13 +2516,10 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
                 table_conf_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.95), table_mean(overallQueueDelay), table_var(overallQueueDelay), table_min(overallQueueDelay), table_max(overallQueueDelay), table_cnt(overallQueueDelay),
                 table_conf_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.95), table_mean(heavyQueueDelay), table_var(heavyQueueDelay), table_min(heavyQueueDelay), table_max(heavyQueueDelay), 
                 table_conf_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.95), table_mean(lightQueueDelay), table_var(lightQueueDelay), table_min(lightQueueDelay), table_max(lightQueueDelay));
-        for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-        {
-            fprintf(statsFile,"qTime[%d] = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen[%d] = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), rtt = %e\n", loopIndex, table_conf_mean(onuAttrs[loopIndex].queueTimeTable), 
-                    table_conf_halfwidth(onuAttrs[loopIndex].queueTimeTable, 0.95), table_mean(onuAttrs[loopIndex].queueTimeTable), table_var(onuAttrs[loopIndex].queueTimeTable), table_min(onuAttrs[loopIndex].queueTimeTable), table_max(onuAttrs[loopIndex].queueTimeTable), loopIndex, 
-                    table_conf_mean(onuAttrs[loopIndex].queueLengthTable), 
-                    table_conf_halfwidth(onuAttrs[loopIndex].queueLengthTable, 0.95), table_mean(onuAttrs[loopIndex].queueLengthTable), table_var(onuAttrs[loopIndex].queueLengthTable), table_min(onuAttrs[loopIndex].queueLengthTable), table_max(onuAttrs[loopIndex].queueLengthTable), onuAttrs[loopIndex].rtt);
-        }
+        fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), rtt = %e\n", table_conf_mean(oltAttrs.queueTimeTable), 
+                table_conf_halfwidth(oltAttrs.queueTimeTable, 0.95), table_mean(oltAttrs.queueTimeTable), table_var(oltAttrs.queueTimeTable), table_min(oltAttrs.queueTimeTable), table_max(oltAttrs.queueTimeTable), 
+                table_conf_mean(oltAttrs.queueLengthTable), 
+                table_conf_halfwidth(oltAttrs.queueLengthTable, 0.95), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable), oltAttrs.rtt);
     }
     else
     {
@@ -3243,24 +2581,11 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
                 table_conf_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.90), table_mean(overallQueueDelay), table_var(overallQueueDelay), table_min(overallQueueDelay), table_max(overallQueueDelay), table_cnt(overallQueueDelay), 
                 table_conf_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.90), table_mean(heavyQueueDelay), table_var(heavyQueueDelay), table_min(heavyQueueDelay), table_max(heavyQueueDelay), 
                 table_conf_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.90), table_mean(lightQueueDelay), table_var(lightQueueDelay), table_min(lightQueueDelay), table_max(lightQueueDelay));
-        for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
-        {
-            fprintf(statsFile,"qTime[%d] = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen[%d] = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), rtt = %e\n", loopIndex, table_conf_mean(onuAttrs[loopIndex].queueTimeTable), 
-                    table_conf_halfwidth(onuAttrs[loopIndex].queueTimeTable, 0.90), table_mean(onuAttrs[loopIndex].queueTimeTable), table_var(onuAttrs[loopIndex].queueTimeTable), table_min(onuAttrs[loopIndex].queueTimeTable), table_max(onuAttrs[loopIndex].queueTimeTable), loopIndex, 
-                    table_conf_mean(onuAttrs[loopIndex].queueLengthTable), 
-                    table_conf_halfwidth(onuAttrs[loopIndex].queueLengthTable, 0.90), table_mean(onuAttrs[loopIndex].queueLengthTable), table_var(onuAttrs[loopIndex].queueLengthTable), table_min(onuAttrs[loopIndex].queueLengthTable), table_max(onuAttrs[loopIndex].queueLengthTable), onuAttrs[loopIndex].rtt);
-        }
+        fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), rtt = %e\n", table_conf_mean(oltAttrs.queueTimeTable), 
+                table_conf_halfwidth(oltAttrs.queueTimeTable, 0.90), table_mean(oltAttrs.queueTimeTable), table_var(oltAttrs.queueTimeTable), table_min(oltAttrs.queueTimeTable), table_max(oltAttrs.queueTimeTable), 
+                table_conf_mean(oltAttrs.queueLengthTable), 
+                table_conf_halfwidth(oltAttrs.queueLengthTable, 0.90), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable), oltAttrs.rtt);
     }
-
-	if(simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON)
-	{
-		fprintf(vodFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallVideoQueueDelay), table_conf_lower(overallVideoQueueDelay, 0.90), table_conf_upper(overallVideoQueueDelay, 0.90), 0.90);
-		fprintf(vodsFile,"%f %e %e %e\n", trafficLoad, table_var(overallVideoQueueDelay), table_min(overallVideoQueueDelay), table_max(overallVideoQueueDelay));
-		fprintf(vugFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(unusedVideoGrant), table_conf_lower(unusedVideoGrant, 0.90), table_conf_upper(unusedVideoGrant, 0.90), 0.90);
-		/* To output a report file */
-		fprintf(vrFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(videoReport), table_conf_lower(videoReport, 0.90), table_conf_upper(videoReport, 0.90), 0.90);
-		fprintf(vrmFile,"%f %e\n", trafficLoad, table_max(videoReport));
-	}
 
     /* Report Histograms */
     for(loopIndex=1; loopIndex <= table_histogram_num(overallQueueDelay); loopIndex++)
@@ -3290,8 +2615,8 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
     /* Report ONU throughput */
     for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
     {
-        fprintf(tpoFile[loopIndex],"%f %f %f %f\n", trafficLoad, table_mean(onuAttrs[loopIndex].transmitThroughput),table_min(onuAttrs[loopIndex].transmitThroughput),table_max(onuAttrs[loopIndex].transmitThroughput));
-        actual_tput[loopIndex] = table_mean(onuAttrs[loopIndex].transmitThroughput);
+        fprintf(tpoFile[loopIndex],"%f %f %f %f\n", trafficLoad, table_mean(oltAttrs.transmitThroughput),table_min(oltAttrs.transmitThroughput),table_max(oltAttrs.transmitThroughput));
+        actual_tput[loopIndex] = table_mean(oltAttrs.transmitThroughput);
     }
 
     /* Record throughput fairness from the fairness samples */
@@ -3333,15 +2658,6 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
     fclose(odoFile);
     fclose(odFile);
     
-    if(simParams.VIDEO_TRAFFIC == VIDEO_TRAFFIC_ON)
-    {
-	fclose(vodFile);
-	fclose(vodsFile);
-	fclose(vugFile);
-	fclose(vrFile);
-	fclose(vrmFile);
-    }
-		
     fclose(qdFile);
     fclose(odmnFile);
     fclose(odmxFile);

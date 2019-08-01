@@ -33,35 +33,35 @@ double stream_pareto_epon(STREAM randomStream, double shapeParam, double locatio
 }
 
 /* Packet assignment function */
-void assign_packet(sENTITY_PKT *pkt, int onuNum)
+void assign_packet(sENTITY_PKT *pkt)
 {
   if(pkt != NULL)
   {
     pkt->creationTime = simtime();
-    if(onuAttrs[onuNum].packetsHead == NULL)
+    if(oltAttrs.packetsHead == NULL)
     {
       /* this is the only packet */
-      onuAttrs[onuNum].packetsHead = pkt;
-      onuAttrs[onuNum].packetsTail = pkt;
+      oltAttrs.packetsHead = pkt;
+      oltAttrs.packetsTail = pkt;
     }
     else
     {
       /* Go to the end of the packet list for this ONU */
-      onuAttrs[onuNum].packetsTail->next = pkt;
+      oltAttrs.packetsTail->next = pkt;
       pkt->next = NULL;
-      onuAttrs[onuNum].packetsTail = pkt;
+      oltAttrs.packetsTail = pkt;
     }
     /* Add this packet's size to the queue size */
-    onuAttrs[onuNum].packetQueueSize += pkt->size;
+    oltAttrs.packetQueueSize += pkt->size;
     /* Add this packet to the queue packet count */
-    onuAttrs[onuNum].packetQueueNum++;
+    oltAttrs.packetQueueNum++;
   }
 }
 
 /*
  * Traffic models
  */
-// This is a new, useless line
+
 /* Process model of a Poisson traffic generator */
 void traffic_src_poisson(int onuNum)
 {
@@ -79,15 +79,15 @@ void traffic_src_poisson(int onuNum)
 		/* Generate packets according to a particular distribution */
 		if(onuNum < simParams.NUM_HEAVY_ONU)
 		{
-			hold(stream_exponential(onuAttrs[onuNum].pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME_HEAVY));
+			hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME_HEAVY));
 		}
 		else
 		{
-			hold(stream_exponential(onuAttrs[onuNum].pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
+			hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
 		}
-		pktSize = (int) stream_empirical(onuAttrs[onuNum].pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
+		pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
 		pktPtr = create_a_packet(pktSize, onuNum);
-   	assign_packet(pktPtr, onuNum);
+   	assign_packet(pktPtr);
     // printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktSize,onuNum);
 	}
 	
@@ -108,7 +108,6 @@ void traffic_src_self_similar(int onuNum, int streamNum)
 	sENTITY_PKT *pktPtr;
 	double currPktTime, offTime;
 	int burstSize, loop;
-    //double lastPktTxTime;
 	
 	/* Initialize the process */
 	procId[0] = '\0';
@@ -120,27 +119,27 @@ void traffic_src_self_similar(int onuNum, int streamNum)
 	if(onuNum < simParams.NUM_HEAVY_ONU)
 	{
     /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
-		offTime = stream_pareto_epon(onuAttrs[onuNum].pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
+		offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
 	}
 	else
 	{
     /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
-		offTime = stream_pareto_epon(onuAttrs[onuNum].pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
+		offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
 	}
 	hold(offTime);
 
 	while(!terminateSim)
 	{
     /* Pareto distributed burst size */
-		burstSize = (int) rintf(stream_pareto_epon(onuAttrs[onuNum].pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_PARETO_LOC_PARAM));
+		burstSize = (int) rintf(stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_PARETO_LOC_PARAM));
 		/* Transmit Burst */
 		for(loop=0; loop < burstSize; loop++)
 		{
-			pktSize = (int) stream_empirical(onuAttrs[onuNum].pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
+			pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
 			pktPtr = create_a_packet(pktSize, onuNum);
 			/* assign_packet(pktPtr, onuNum); */
 			/* Send packet to packet arrival mailbox */
-			send(onuAttrs[onuNum].pktMailbox, (long) pktPtr);
+			send(oltAttrs.pktMailbox, (long) pktPtr);
 			currPktTime = pktSize * simParams.TIME_PER_BYTE + simParams.PREAMBLE_IPG_TIME;
 			hold(currPktTime);
 		}
@@ -148,12 +147,12 @@ void traffic_src_self_similar(int onuNum, int streamNum)
 		if(onuNum < simParams.NUM_HEAVY_ONU)
 		{
       /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
-      offTime = stream_pareto_epon(onuAttrs[onuNum].pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
+      offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
 		}
 		else
 		{
       /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
-      offTime = stream_pareto_epon(onuAttrs[onuNum].pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
+      offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
 		}
 		/*
 		 * Factor out Preamble and IPG time from OFF time period
@@ -169,7 +168,6 @@ void traffic_src_self_similar(int onuNum, int streamNum)
 		}
 		hold(offTime);
 	}
-	
 }
 
 /* 
@@ -193,13 +191,13 @@ void traffic_agg_self_similar(int onuNum)
 	while(!terminateSim)
 	{
 		/* Get packet from mailbox */
-		receive(onuAttrs[onuNum].pktMailbox, (long *) &pktPtr);
+		receive(oltAttrs.pktMailbox, (long *) &pktPtr);
 
 		/* Place in Queue for ONU */
-		assign_packet(pktPtr, onuNum);
+		assign_packet(pktPtr);
 
     /* Check for excessive buffer size */
-		if(onuAttrs[onuNum].packetQueueSize > MAX_PKT_BUF_SIZE)
+		if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
 		{
 			fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
 			dump_sim_core();

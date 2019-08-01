@@ -310,7 +310,7 @@ typedef struct
 	double		SHORTEST_POLL_TIME;
 	double		AVAIL_COST_WEIGHT;		/* Availability Cost weight for WBM schedulers */
 
-	double		ONU_PROP[MAX_ONU];		/* ONU to OLT propagation delay values */
+	double		ONU_PROP;		/* ONU to OLT propagation delay values */
 	
 } sSIM_PARAMS;
 
@@ -321,29 +321,14 @@ typedef struct entity_pkt
 	double	transmissionTime;
 	double	arrivalTime;
 	int	size;
-	/* Rami will add fields relevant to video packets */
-	/*  int		type; */
 	char	frameType;
 	int	forecastSize;
 	double	frameTimeStamp;
 	int	forecastPktNumber;
-	int layer;
-	
+  int onuNum;
+
 	struct	entity_pkt *next;
 } sENTITY_PKT;
-
-/* GATE entity data structure */
-typedef struct entity_gate_pkt
-{
-	double	start;		/* GATE start in time */
-	double	length;		/* GATE total length in time */
-	double	data_length;	/* GATE data length in time */
-	double	video_length;	/* GATE video length in time */
-	double	grant;		/* GATE total length in bytes */
-	double	data_grant;	/* GATE data length in bytes */
-	double	video_grant;	/* GATE video length in bytes */
-	int	lambda; 	/* Assigned length */
-} sENTITY_GATE_PKT;
 
 /* ONU attribute structure */
 typedef struct
@@ -352,78 +337,25 @@ typedef struct
 	sENTITY_PKT		*packetsTail;
 	double				packetQueueSize;	/* Packet Queue Size (in bytes) */
 	unsigned long		packetQueueNum;		/* # of Packets in Queue */
-	double 			rptQueueSize;		/* Reported Queue Size (in bytes) */
-	unsigned long		rptQueueNum;		/* # of Reported packets in Queue */
-	sENTITY_PKT		*packetsVideoHead;
-	sENTITY_PKT		*packetsVideoTail;
-//	unsigned long		packetVideoQueueSize;	/* Packet Video Queue Size (in bytes) */
-	double				packetVideoQueueSize;	/* Packet Video Queue Size (in bytes) */
-	unsigned long		packetVideoQueueNum;	/* # of Packets in Video Queue */
-//	unsigned long		packetForecastVideoQueueSize;
-	double				packetForecastVideoQueueSize;
-	unsigned long		packetForecastVideoQueueNum;
-	double				packetForecastVideoTime;
-// 	unsigned long		rptVideoQueueSize;	/* Reported Video Queue Size (in bytes) */
-	double				rptVideoQueueSize;	/* Reported Video Queue Size (in bytes) */
-	unsigned long		rptVideoQueueNum;	/* # of Reported packets in Video Queue */
-//	unsigned long		rptForecastVideoQueueSize;
-	double				rptForecastVideoQueueSize;
-	unsigned long		rptForecastVideoQueueNum;
-	double			rptForecastVideoTime;
-	double			previousGrantStartTime;
 	double			startoffset;
-	double			startFrame;
-	double			maxFrameCount;
-	double			sentFrameCount;
-	double			currentFrame;
 	double			wrapAround;
-	double			averageGrantCycle;
-	double			totalNumberGrantCycle;
-	double			maximumGrantCycle;
-	double			maximumGrantCycleTime;
-//	unsigned long		remainPSFgrant;		
-//	unsigned long		grantLen;		/* current Grant Length (in bytes) */
-//	unsigned long		dataGrantLen;		/* current Data Grant Length (in bytes) */
-//	unsigned long		videoGrantLen;		/* current Video Grant Length (in bytes) */
-	double				remainPSFgrant;		
-	double				grantLen;		/* current Grant Length (in bytes) */
-	double				dataGrantLen;		/* current Data Grant Length (in bytes) */
-	double				videoGrantLen;		/* current Video Grant Length (in bytes) */
-	int			videoServiced;
-	double 			rptTime;		/* time of latest REPORT */
-	double			prevGateTime;		/* time of previous GATE */
-	double			readyTime;		/* time ONU is ready for scheduling (i.e., after REPORT transmission) */
-	int			step2Sched;		/* flag to indicate whether ONU is scheduled in step 2, used by Online JIT */
 	double 			minArrivalTime;		/* Minimum arrival time in Queue */
 	double			avgArrivalTime;		/* Average arrival time in Queue */
-	double 			minArrivalTimeVideo;		/* Minimum arrival time in Queue */
-	double			avgArrivalTimeVideo;		/* Average arrival time in Queue */	
-	MBOX			grantMailbox[MAX_LAMBDAS];
 	MBOX			pktMailbox;
 	double			latency;
 	double			rtt;
-	int			supportedLambdas[MAX_LAMBDAS+1];	/* List of supported lambdas, terminated with LAMBDA_NULL */
-	int			supportedLambdasMap[MAX_LAMBDAS];	/* Supported Lambdas Map */
-	int			numSupportedLambdas;
-	int			tunedLambda;
-	int			wdmType;
 	double			tuningTime;
 	int			priority;
 	int			tslotStart;
 	TABLE			transmitTimeTable;
-	TABLE			transmitVideoTimeTable;
 	TABLE			queueTimeTable;
-	TABLE			VideoqueueTimeTable;
 	TABLE			queueLengthTable;
-    	METER			zeroReqRate;
-    	METER			nonzeroReqRate;
+ 	METER			zeroReqRate;
+ 	METER			nonzeroReqRate;
 	STREAM			pktInterArrivalStream;
 	STREAM			pktSizeStream;
 	STREAM			burstSizeStream;
-//	unsigned long		transmitByteCnt;
-//	unsigned long		transmitVideoByteCnt;
 	double				transmitByteCnt;
-	double				transmitVideoByteCnt;
 	TABLE			transmitThroughput;
 } sONU;
 
@@ -510,7 +442,7 @@ extern char procId[20];
 extern sSIM_PARAMS simParams;
 
 /* ONU attributes structure array */
-extern sONU onuAttrs[MAX_ONU];
+extern sONU oltAttrs;
 
 /* a flag to signal a graceful termination of the simulation */
 extern int terminateSim;
