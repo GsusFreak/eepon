@@ -253,7 +253,7 @@ typedef struct
 	int		END_LAMBDA;
 	long		RAND_SEED;
 	double		SIM_TRACE_TIMESCALE;
-    	double		SIM_TRACE_TIME;
+  double		SIM_TRACE_TIME;
 	int		SIM_TRACE;
 	int		GRANT_TRACE;
 	int		GET_TAIL;		/* Get tails for histogram (each simulation will run twice!!!) */
@@ -309,9 +309,7 @@ typedef struct
 	double		ACTUAL_MIN_PROP_DELAY;
 	double		SHORTEST_POLL_TIME;
 	double		AVAIL_COST_WEIGHT;		/* Availability Cost weight for WBM schedulers */
-
-	double		ONU_PROP;		/* ONU to OLT propagation delay values */
-	
+	double		ONU_PROP[MAX_ONU];		/* ONU to OLT propagation delay values */
 } sSIM_PARAMS;
 
 /* Packet entity data structure */
@@ -330,23 +328,17 @@ typedef struct entity_pkt
 	struct	entity_pkt *next;
 } sENTITY_PKT;
 
-/* ONU attribute structure */
+/* OLT attribute structure */
 typedef struct
 {
 	sENTITY_PKT		*packetsHead;
 	sENTITY_PKT		*packetsTail;
 	double				packetQueueSize;	/* Packet Queue Size (in bytes) */
 	unsigned long		packetQueueNum;		/* # of Packets in Queue */
-	double			startoffset;
-	double			wrapAround;
 	double 			minArrivalTime;		/* Minimum arrival time in Queue */
 	double			avgArrivalTime;		/* Average arrival time in Queue */
 	MBOX			pktMailbox;
-	double			latency;
-	double			rtt;
-	double			tuningTime;
-	int			priority;
-	int			tslotStart;
+	int			  tslotStart;
 	TABLE			transmitTimeTable;
 	TABLE			queueTimeTable;
 	TABLE			queueLengthTable;
@@ -355,11 +347,34 @@ typedef struct
 	STREAM			pktInterArrivalStream;
 	STREAM			pktSizeStream;
 	STREAM			burstSizeStream;
-	double				transmitByteCnt;
+	double			transmitByteCnt;
 	TABLE			transmitThroughput;
+} sOLT;
+
+
+/* ONU attribute structure */
+typedef struct
+{
+  double      startoffset;
+  double      minArrivalTime;   /* Minimum arrival time in Queue */
+  double      avgArrivalTime;   /* Average arrival time in Queue */
+  double      minArrivalTimeVideo;    /* Minimum arrival time in Queue */
+  double      avgArrivalTimeVideo;    /* Average arrival time in Queue */
+  double      latency;
+  double      rtt;
+  int     priority;
+  int     tslotStart;
+  METER     zeroReqRate;
+  METER     nonzeroReqRate;
+  STREAM      pktInterArrivalStream;
+  STREAM      pktSizeStream;
+  STREAM      burstSizeStream;
+  double        transmitByteCnt;
+  TABLE     transmitThroughput;
 } sONU;
 
-/* Scheduling Pool Data Structure */
+
+/* Schedueing Pool Data Structure */
 typedef struct
 {
     int     state;      /* ONU activity state (2 - imminent, 1 - in scheduling pool, 0 - inactive) */
@@ -441,8 +456,9 @@ extern char procId[20];
 /* simulation parameters data structure */
 extern sSIM_PARAMS simParams;
 
-/* ONU attributes structure array */
-extern sONU oltAttrs;
+/* OLT attributes structure array */
+extern sOLT oltAttrs;
+extern sONU onuAttrs[MAX_ONU];
 
 /* a flag to signal a graceful termination of the simulation */
 extern int terminateSim;

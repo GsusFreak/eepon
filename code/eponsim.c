@@ -25,7 +25,8 @@ EVENT SIM_END_EVENT;
 sSIM_PARAMS simParams;
 
 /* ONU attributes structure array */
-sONU oltAttrs;
+sOLT oltAttrs;
+sONU onuAttrs[MAX_ONU];
 
 /* Scheduling Pool structure array */
 sSCHED_POOL schedPool[MAX_ONU];
@@ -511,25 +512,17 @@ void init_data_structures()
   oltAttrs.packetsTail		= NULL;
   oltAttrs.packetQueueSize	= 0;
   oltAttrs.packetQueueNum	= 0;
-  oltAttrs.latency		= 0;
   oltAttrs.transmitByteCnt	= 0;
 	for(i=0; i < simParams.NUM_ONU; i++)
 	{
-		schedPool[i].gateLambda		= LAMBDA_NULL;
-		schedPool[i].gateLength		= 0;
- 		schedPool[i].gateStart		= 1e200;
+    onuAttrs[i].latency		= 0;
  		schedPool[i].poolTime		= 1e200;
 		schedPool[i].state		= ONU_SCHED_INACTIVE;
 		schedPool[i].rounds		= 0;
 	}
 	downstreamFree = 0;
-	for(i=0; i < simParams.NUM_LAMBDAS; i++)
-	{
-		lambdaFree[i] = 0;
-		lambdaAssign[i] = 0;
-		grantTracePtr[i] = 0;
-	}
-	/* initialize time trace data structures */
+	
+  /* initialize time trace data structures */
 	for(i=0; i < MAX_TRACE_VALUES; i++)
 	{
 		overallQueueDelayTrace[i]	= 0;
@@ -635,10 +628,11 @@ void dump_sim_core()
   fprintf(simcoreFile, "OLT\n");
   fprintf(simcoreFile, "packetQueueSize = %.0f, ", oltAttrs.packetQueueSize);
   fprintf(simcoreFile, "packetQueueNum = %ld, ", oltAttrs.packetQueueNum);
-  fprintf(simcoreFile, "latency = %e, ", oltAttrs.latency);
-  fprintf(simcoreFile, "rtt = %e, ", oltAttrs.rtt);
-  fprintf(simcoreFile, "tuningTime = %e, ", oltAttrs.tuningTime);
-  fprintf(simcoreFile, "priority = %d, ", oltAttrs.priority);
+	for(loopIndex=0; loopIndex < simParams.NUM_LAMBDAS; loopIndex++)
+	{
+    fprintf(simcoreFile, "latency[%d] = %e, ", loopIndex, onuAttrs[loopIndex].latency);
+    fprintf(simcoreFile, "rtt[%d] = %e, ", loopIndex, onuAttrs[loopIndex].rtt);
+  }
   fprintf(simcoreFile, "tslotStart = %d\n", oltAttrs.tslotStart);
 	fflush(NULL);
 	
@@ -1219,9 +1213,15 @@ void sim()
     oltAttrs.nonzeroReqRate = meter("Non-Zero Request Rate");
     meter_confidence(oltAttrs.nonzeroReqRate);
     /* setup ONU latency */
-    oltAttrs.latency = simParams.ONU_PROP; /* ONU distance of 10 to 20 km */
-    oltAttrs.rtt	= oltAttrs.latency*2;
-  
+  	for(i=0; i < simParams.NUM_ONU; i++)
+    {
+        onuAttrs[i].latency = simParams.ONU_PROP[i]; /* ONU distance of 10 to 20 km */
+        onuAttrs[i].rtt	= onuAttrs[i].latency*2;
+        tempStr[0] = '\0';
+        sprintf(tempStr, "Throughput for ONU %d", i);
+        onuAttrs[i].transmitThroughput = table(tempStr);
+        table_confidence(onuAttrs[i].transmitThroughput);
+    } 
 
   	/* Setup random number streams */
   	oltAttrs.pktInterArrivalStream = create_stream();
@@ -2516,10 +2516,10 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
                 table_conf_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.95), table_mean(overallQueueDelay), table_var(overallQueueDelay), table_min(overallQueueDelay), table_max(overallQueueDelay), table_cnt(overallQueueDelay),
                 table_conf_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.95), table_mean(heavyQueueDelay), table_var(heavyQueueDelay), table_min(heavyQueueDelay), table_max(heavyQueueDelay), 
                 table_conf_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.95), table_mean(lightQueueDelay), table_var(lightQueueDelay), table_min(lightQueueDelay), table_max(lightQueueDelay));
-        fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), rtt = %e\n", table_conf_mean(oltAttrs.queueTimeTable), 
+        fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e)\n", table_conf_mean(oltAttrs.queueTimeTable), 
                 table_conf_halfwidth(oltAttrs.queueTimeTable, 0.95), table_mean(oltAttrs.queueTimeTable), table_var(oltAttrs.queueTimeTable), table_min(oltAttrs.queueTimeTable), table_max(oltAttrs.queueTimeTable), 
                 table_conf_mean(oltAttrs.queueLengthTable), 
-                table_conf_halfwidth(oltAttrs.queueLengthTable, 0.95), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable), oltAttrs.rtt);
+                table_conf_halfwidth(oltAttrs.queueLengthTable, 0.95), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable));
     }
     else
     {
@@ -2581,10 +2581,10 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
                 table_conf_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.90), table_mean(overallQueueDelay), table_var(overallQueueDelay), table_min(overallQueueDelay), table_max(overallQueueDelay), table_cnt(overallQueueDelay), 
                 table_conf_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.90), table_mean(heavyQueueDelay), table_var(heavyQueueDelay), table_min(heavyQueueDelay), table_max(heavyQueueDelay), 
                 table_conf_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.90), table_mean(lightQueueDelay), table_var(lightQueueDelay), table_min(lightQueueDelay), table_max(lightQueueDelay));
-        fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), rtt = %e\n", table_conf_mean(oltAttrs.queueTimeTable), 
+        fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e)\n", table_conf_mean(oltAttrs.queueTimeTable), 
                 table_conf_halfwidth(oltAttrs.queueTimeTable, 0.90), table_mean(oltAttrs.queueTimeTable), table_var(oltAttrs.queueTimeTable), table_min(oltAttrs.queueTimeTable), table_max(oltAttrs.queueTimeTable), 
                 table_conf_mean(oltAttrs.queueLengthTable), 
-                table_conf_halfwidth(oltAttrs.queueLengthTable, 0.90), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable), oltAttrs.rtt);
+                table_conf_halfwidth(oltAttrs.queueLengthTable, 0.90), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable));
     }
 
     /* Report Histograms */

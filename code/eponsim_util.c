@@ -212,9 +212,27 @@ void remove_packet()
 	else
 	{
 		oltAttrs.packetQueueNum--;
-		test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][1]++;
+		test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
 	}
 	free(tmp);
+}
+
+
+void remove_all_packets()
+{
+  sENTITY_PKT *tmp;
+  while(oltAttrs.packetsHead != NULL)
+  {
+    tmp = oltAttrs.packetsHead;
+    oltAttrs.packetsHead = oltAttrs.packetsHead->next;
+    /* Remove this packets size from the queue size */
+    oltAttrs.packetQueueSize -= tmp->size;
+    /* Remove this packet from the queue packet count */
+    oltAttrs.packetQueueNum--;
+    test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
+    free(tmp);
+  }
+  oltAttrs.packetsTail = NULL;
 }
 
 
