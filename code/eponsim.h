@@ -324,7 +324,6 @@ typedef struct entity_pkt
 	double	frameTimeStamp;
 	int	forecastPktNumber;
   int onuNum;
-
 	struct	entity_pkt *next;
 } sENTITY_PKT;
 
@@ -627,32 +626,21 @@ typedef struct
 			read_sim_cfg_file_finish,
 			heartbeat_process,
 			// That's [run# (probably only 1)][load level (probably 0.1 to 0.9)][PilotRun == 0, ActualRun == 1]
-			main_begin_lambda[10],
-			main_end_lambda[10],
 			main_test[10][20],
 			main_begin_load[10][20],
 			main_end_load[10][20],
-			gate_created[10][20],
-			gate_destroyed[10][20],
 			sim_start[10][20][2],
 			sim_process[10][20][2],
 			sim_before_ONU_processes[10][20][2],
 			sim_finish[10][20][2],
 			sim_finish2[10][20][2],
 			sim_ctrl_simType[10][20][2],
-			sim_ctrl_videoTraffic[10][20][2],
 			sim_ctrl_testProbe[10][20][2],
-			traffic_src_video_start[10][20][64],
-			traffic_src_video_process[10][20][64],
-			traffic_src_video_finish[10][20][64],
-			traffic_scalable_video_start[10][20][64],
-			traffic_scalable_video_process[10][20][64],
-			traffic_scalable_video_finish[10][20][64],
-			vid_pkt_created[10][20][64],
-			vid_pkt_destroyed[10][20][64],
 			data_pkt_created[10][20][64],
-			data_pkt_destroyed[10][20][64];
-	int		loadOrderCounter,
+			data_pkt_destroyed[10][20][64],
+			data_pkt_created_olt[10][20],
+			data_pkt_destroyed_olt[10][20];
+	int	loadOrderCounter,
 			runNum;
 	
 } sIndicators;

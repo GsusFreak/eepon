@@ -28,10 +28,11 @@ sONU_LIST *overloadedONUList;
  *
  */
 
-void onu()
+// Hello, joe.
+void onu(int onuNum)
 {
 	create("ONU");
-	// printf("OLT started\n");
+	printf("OLT %d started\n", onuNum);
 
 	// Test Variables
 	status_processes_print();

@@ -59,7 +59,7 @@ void calc_avg_arrival(double *avgVal)
     }
 }
 
-
+// Hello, joe
 void olt()
 {
 	int transmitPkt;
@@ -78,69 +78,63 @@ void olt()
 	/* Upstream transmission gate functinnality of new OLT */
 	while(!terminateSim) /* permanent behavior of the new OLT process moel */
 	{
+    /* Reset the loop variables */
+    txPktCount = 0;
     transmitPkt = 1;
 			
-		/* 
-		 * Service the OLT packet queue
-		 */
+		// Service the OLT packet queue
 			 
-   	/* If there are no packets in queue, then just transmit a report */
-   	if(oltAttrs.packetsHead == NULL)
-   	{
-   		// If there are not packets, simply wait one polling cycle
-      transmitPkt = 0;
-      hold(simParams.TIME_PER_BYTE/10);
-      // This is supposed to be a 10G PON, so it
-      // should take about 100 ps to transmit one bit
-      // Thus, a wait period of 10 ps (10^-11 sec) was chosen.
-   	}
-   
-   	/* Check for excessive buffer size */
-   	if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
-   	{
-   		fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
-   		dump_sim_core();
-   		transmitPkt = 0;
-   	}
-   
-   	/* Reset transmitted packet counter */
-   	txPktCount = 0;
-   	
+    /* Check for excessive buffer size */
+    if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
+    {
+    	fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
+    	dump_sim_core();
+    	transmitPkt = 0;
+    }
+    
     while(transmitPkt)
-   	{
-   		/* transmit a packet */
-   		/* collect statistics on this packet */
-   		record_packet_stats_dequeue_tx_time(1);
-   		/* Copy packet to temporary data structure */
-   		currPkt.creationTime = oltAttrs.packetsHead->creationTime;
-   		currPkt.transmissionTime = oltAttrs.packetsHead->transmissionTime;
-   		currPkt.arrivalTime = oltAttrs.packetsHead->arrivalTime;
-   		currPkt.size = oltAttrs.packetsHead->size;
+    {
+    	if(oltAttrs.packetsHead == NULL)
+    	{
+        // If there are no packets, simply a short period of time 
+        transmitPkt = 0;
+        hold(simParams.TIME_PER_BYTE);
+    	}
+      else
+      {
+    	  /* transmit a packet */
+    	  /* collect statistics on this packet */
+    	  record_packet_stats_dequeue_tx_time(currPkt.onuNum);
+    	  /* Copy packet to temporary data structure */
+    	  currPkt.creationTime = oltAttrs.packetsHead->creationTime;
+    	  currPkt.transmissionTime = oltAttrs.packetsHead->transmissionTime;
+    	  currPkt.arrivalTime = oltAttrs.packetsHead->arrivalTime;
+    	  currPkt.size = oltAttrs.packetsHead->size;
+  
+        /* remove packet */
+    	  remove_packet();		
+    	  
+    	  packet_transmission_time = (currPkt.size)*simParams.TIME_PER_BYTE;
+    	  
+    	  // result = timed_reserve(1, 0.0);
+    	  hold(packet_transmission_time);
+    	  // release(lambda[1]);
+    
+    	  /* Increment transmitted packet counter */
+    	  txPktCount++;
+    
+    	  /* Incremement throughput statistics per ONU*/
+    	  oltAttrs.transmitByteCnt += currPkt.size;
+    	  
+    	  /* Collect statistics on this packet */
+    	  // ToDo: Integrate a variable for the onu currently being sent to 
+        // and call it onuNum.
+        //record_packet_stats_finish(onuNum, &currPkt);
+     	}
 
-      /* remove packet */
-   		remove_packet();		
-   		
-   		packet_transmission_time = (currPkt.size)*simParams.TIME_PER_BYTE;
-   		
-   		// result = timed_reserve(1, 0.0);
-   		hold(packet_transmission_time);
-   		// release(lambda[1]);
-   
-   		/* Increment transmitted packet counter */
-   		txPktCount++;
-   
-   		/* Incremement throughput statistics per ONU*/
-   		oltAttrs.transmitByteCnt += currPkt.size;
-   
-   		
-   		/* Collect statistics on this packet */
-   		// ToDo: Integrate a variable for the onu currently being sent to 
-      // and call it onuNum.
-      //record_packet_stats_finish(onuNum, &currPkt);
-   	}
- 
-    /* Record number of packets transmitted */
-    record(txPktCount,overallGrantSizePkt);
+      /* Record number of packets transmitted */
+      //record(txPktCount,overallGrantSizePkt);
+    }
 	}
 }
 

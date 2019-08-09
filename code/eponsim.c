@@ -45,15 +45,9 @@ int		lambdaAssign[MAX_LAMBDAS];	/* array to keep track of lambda ONU assignments
 double actual_tput[MAX_ONU];
 double ideal_tput[MAX_ONU];
 
-TABLE 		throughputFairness;
+TABLE 	throughputFairness;
 TABLE		overallQueueDelay;
-TABLE		overallVideoQueueDelay;
-TABLE		overallVideoQueueDelay_MovingAverage;
-TABLE		unusedVideoGrant;
-TABLE		videoReport;
-TABLE		cycleVideoQueueDelay;
 TABLE		queueDelay;
-TABLE		cycleQueueDelay;
 TABLE		heavyQueueDelay;
 TABLE		lightQueueDelay;
 TABLE		preferQueueDelay;
@@ -61,23 +55,10 @@ TABLE		overallQueueLength;
 TABLE		heavyQueueLength;
 TABLE		lightQueueLength;
 TABLE		preferQueueLength;
-TABLE		overallGrantSize;
-TABLE		overallGrantSizePkt;
-TABLE		heavyGrantSize;
-TABLE		lightGrantSize;
 TABLE		overallCycleLength;
 TABLE		heavyCycleLength;
 TABLE		lightCycleLength;
 TABLE		preferCycleLength;
-TABLE		overallRptToSchedTime;
-TABLE		heavyRptToSchedTime;
-TABLE		lightRptToSchedTime;
-TABLE		overallRptToGateTime;
-TABLE		heavyRptToGateTime;
-TABLE		lightRptToGateTime;
-TABLE 	numONUSched;
-TABLE 	loadBalanceMeasure;
-TABLE 	schedRounds;
 
 TABLE		compRatio1;
 TABLE		compRatio2;
@@ -92,21 +73,6 @@ sSTAT_EST	lightQueueDelayEst;
 sSTAT_EST	overallQueueLengthEst;
 sSTAT_EST	heavyQueueLengthEst;
 sSTAT_EST	lightQueueLengthEst;
-sSTAT_EST	overallGrantSizeEst;
-sSTAT_EST	overallGrantSizePktEst;
-sSTAT_EST	heavyGrantSizeEst;
-sSTAT_EST	lightGrantSizeEst;
-sSTAT_EST	overallCycleLengthEst;
-sSTAT_EST	heavyCycleLengthEst;
-sSTAT_EST	lightCycleLengthEst;
-sSTAT_EST	overallRptToSchedTimeEst;
-sSTAT_EST	heavyRptToSchedTimeEst;
-sSTAT_EST	lightRptToSchedTimeEst;
-sSTAT_EST	overallRptToGateTimeEst;
-sSTAT_EST	heavyRptToGateTimeEst;
-sSTAT_EST	lightRptToGateTimeEst;
-sSTAT_EST	numONUSchedEst;
-
 
 sSS_STAT	overallQueueDelayStat;
 sSS_STAT	heavyQueueDelayStat;
@@ -115,9 +81,6 @@ sSS_STAT	overallQueueLengthStat;
 sSS_STAT	heavyQueueLengthStat;
 sSS_STAT	lightQueueLengthStat;
 
-METER		overallGrantRate;
-METER		heavyGrantRate;
-METER		lightGrantRate;
 METER 	overallZeroReqRate;
 METER 	heavyZeroReqRate;
 METER 	lightZeroReqRate;
@@ -127,7 +90,6 @@ METER 	lightNonzeroReqRate;
 
 double      overallQueueDelayTrace[MAX_TRACE_VALUES];
 double      overallCycleLengthTrace[MAX_TRACE_VALUES];
-double      overallGrantSizeTrace[MAX_TRACE_VALUES];
 double      simTimeTrace[MAX_TRACE_VALUES];
 
 // Global variables for the Controls-based Packet Dropping
@@ -245,15 +207,12 @@ void test_var_print()
 	int iaa;
 	for (iaa = 0; iaa < numRuns; iaa++) {
 		fprintf(indicatorFile, "Run #%d\n", iaa + 1);
-		fprintf(indicatorFile, "main_begin_lambda = %.0f\n", test_vars.main_begin_lambda[iaa]);
-		fprintf(indicatorFile, "main_end_lambda   = %.0f\n", test_vars.main_end_lambda[iaa]);
 		fprintf(indicatorFile, "\n");
 		int ibb;
 		for (ibb = 0; ibb < numLoadLevels; ibb++) {
 			fprintf(indicatorFile, "Load #%d\n", ibb + 1);
 			fprintf(indicatorFile, "main_begin_load = %.0f\n", test_vars.main_begin_load[iaa][ibb]);
 			fprintf(indicatorFile, "main_end_load   = %.0f\n", test_vars.main_end_load[iaa][ibb]);
-			// fprintf(indicatorFile, "main_test = %.0f\n", test_vars.main_test[iaa][ibb]);
 			fprintf(indicatorFile, "\n");
 			int icc;
 			for (icc = 0; icc < 2; icc++) {
@@ -262,36 +221,18 @@ void test_var_print()
 				if (icc == 1)
 					fprintf(indicatorFile, "Actual Run\n");
 				fprintf(indicatorFile, "sim_start  = %.0f\n", test_vars.sim_start[iaa][ibb][icc]);
-				// fprintf(indicatorFile, "sim_process = %.0f\n", test_vars.sim_process[iaa][ibb][icc]);
-				// fprintf(indicatorFile, "sim_before_ONU_processes = %.0f\n", test_vars.sim_before_ONU_processes[iaa][ibb][icc]);
-				// fprintf(indicatorFile, "sim_ctrl_videoTraffic = %.0f\n", test_vars.sim_ctrl_videoTraffic[iaa][ibb][icc]);
-				// fprintf(indicatorFile, "sim_ctrl_simType = %.0f\n", test_vars.sim_ctrl_simType[iaa][ibb][icc]);
 				fprintf(indicatorFile, "sim_finish = %.0f\n", test_vars.sim_finish[iaa][ibb][icc]);
-				// fprintf(indicatorFile, "sim_finish2 = %.0f\n", test_vars.sim_finish2[iaa][ibb][icc]);
 				fprintf(indicatorFile, "\n");
 			}
 			for (icc = 0; icc < numONUs; icc++) {
-				fprintf(indicatorFile, "ONU  #%d:\t", icc+1);
-				if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_OFF)
-				{
-					fprintf(indicatorFile, "traffic_src_video_start   = %.0f\n", test_vars.traffic_src_video_start[iaa][ibb][icc]);
-					fprintf(indicatorFile, "\t\t\ttraffic_src_video_process = %.0f\n", test_vars.traffic_src_video_process[iaa][ibb][icc]);
-					fprintf(indicatorFile, "\t\t\ttraffic_src_video_finish  = %.0f\n", test_vars.traffic_src_video_finish[iaa][ibb][icc]);
-				}
-				else if (simParams.SCALABLE_VIDEO_TRAFFIC == SCALABLE_VIDEO_ON)
-				{
-					fprintf(indicatorFile, "traffic_scalable_video_start   = %.0f\n", test_vars.traffic_scalable_video_start[iaa][ibb][icc]);
-					fprintf(indicatorFile, "\t\t\ttraffic_scalable_video_process = %.0f\n", test_vars.traffic_scalable_video_process[iaa][ibb][icc]);
-					fprintf(indicatorFile, "\t\t\ttraffic_scalable_video_finish  = %.0f\n", test_vars.traffic_scalable_video_finish[iaa][ibb][icc]);
-				}
-				fprintf(indicatorFile, "\t\t\tvid_pkt_created    = %.0f\n", test_vars.vid_pkt_created[iaa][ibb][icc]);
-				fprintf(indicatorFile, "\t\t\tvid_pkt_destroyed  = %.0f\n", test_vars.vid_pkt_destroyed[iaa][ibb][icc]);
-				fprintf(indicatorFile, "\t\t\tdata_pkt_created   = %.0f\n", test_vars.data_pkt_created[iaa][ibb][icc]);
-				fprintf(indicatorFile, "\t\t\tdata_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed[iaa][ibb][icc]);
+				fprintf(indicatorFile, "ONU  #%02d: ", icc+1);
+				fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created[iaa][ibb][icc]);
+				fprintf(indicatorFile, "           data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed[iaa][ibb][icc]);
 				fprintf(indicatorFile, "\n");
 			}
-			fprintf(indicatorFile, "\t\t\tgate_created   = %.0f\n", test_vars.gate_created[iaa][ibb]);
-			fprintf(indicatorFile, "\t\t\tgate_destroyed = %.0f\n", test_vars.gate_destroyed[iaa][ibb]);
+		  fprintf(indicatorFile, "OLT: ");
+	    fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created_olt[iaa][ibb]);
+	    fprintf(indicatorFile, "     data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed_olt[iaa][ibb]);
 			fprintf(indicatorFile, "\n");
 		}
 		fprintf(indicatorFile, "\n");
@@ -314,25 +255,15 @@ void test_var_init()
 	test_vars.heartbeat_process = 0;
 	int iaa; // Once for each run
 	for (iaa = 0; iaa < 10; iaa++) {
-		test_vars.main_begin_lambda[iaa] = 0;
-		test_vars.main_end_lambda[iaa] = 0;
 		int ibb; // Once for each load level
 		for (ibb = 0; ibb < 20; ibb++) {
 			test_vars.main_begin_load[iaa][ibb] = 0;
 			test_vars.main_end_load[iaa][ibb] = 0;
 			test_vars.main_test[iaa][ibb] = 0;
-			test_vars.gate_created[iaa][ibb] = 0;
-			test_vars.gate_destroyed[iaa][ibb] = 0;
+			test_vars.data_pkt_created_olt[iaa][ibb] = 0;
+			test_vars.data_pkt_destroyed_olt[iaa][ibb] = 0;
 			int icc; // Once for each ONU
 			for (icc = 0; icc < 64; icc++)
-				test_vars.traffic_src_video_start[iaa][ibb][icc] = 0;
-				test_vars.traffic_src_video_process[iaa][ibb][icc] = 0;
-				test_vars.traffic_src_video_finish[iaa][ibb][icc] = 0;
-				test_vars.traffic_scalable_video_start[iaa][ibb][icc] = 0;
-				test_vars.traffic_scalable_video_process[iaa][ibb][icc] = 0;
-				test_vars.traffic_scalable_video_finish[iaa][ibb][icc] = 0;
-				test_vars.vid_pkt_created[iaa][ibb][icc] = 0;
-				test_vars.vid_pkt_destroyed[iaa][ibb][icc] = 0;
 				test_vars.data_pkt_created[iaa][ibb][icc] = 0;
 				test_vars.data_pkt_destroyed[iaa][ibb][icc] = 0;
 			for (icc = 0; icc < 2; icc++) {
@@ -341,7 +272,6 @@ void test_var_init()
 				test_vars.sim_finish[iaa][ibb][icc] = 0;
 				test_vars.sim_finish2[iaa][ibb][icc] = 0;
 				test_vars.sim_before_ONU_processes[iaa][ibb][icc] = 0;
-				test_vars.sim_ctrl_simType[iaa][ibb][icc] = 0;
 				test_vars.sim_ctrl_simType[iaa][ibb][icc] = 0;
 			}
 		}
@@ -760,18 +690,6 @@ void heartbeat_with_timetrace()
       fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallCycleLengthTrace[loopIndex]);
     }
     fclose(simCtrlFile);
-		/* grant size */
-    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
-    {
-      overallGrantSizeTrace[loopIndex] = overallGrantSizeTrace[loopIndex+1];
-    }
-    overallGrantSizeTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallGrantSize);
-    simCtrlFile = fopen("gs_trc","w");
-    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
-    {
-      fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallGrantSizeTrace[loopIndex]);
-    }
-    fclose(simCtrlFile);
     /* Print heartbeat */
     if(beat == 0)
 		{
@@ -965,7 +883,6 @@ void sim()
   	create("sim");
   	
   	// Test Variables sim_process
-  	// Please note: This flag is also useless. Sim finishes. Bummer.
   	if (simType == PILOT_RUN) {
   		  test_vars.sim_process[test_vars.runNum][test_vars.loadOrderCounter][0]++;
   		  test_var_print();
@@ -992,32 +909,8 @@ void sim()
   	/* Setup error handler */
   	set_err_handler((*sim_err_handler));
   	
-  	///* Start heartbeat */
-  	//if(simParams.SIM_TRACE == SIM_TRACE_ON)
-  	//{
-  	//	heartbeat_with_timetrace();
-  	//}
-  	//else
-  	//{
-  	//	heartbeat();
-  	//}
-  
-  	/* 
-  	 * Setup Random Number Stream Seeds, start with a base simParams.RAND_SEED
-  	 * then increment by 1, every time the seed is used so the next one is the
-  	 * previous + 1
-  	 */
   	rand_seed = simParams.RAND_SEED;
-  		
-  	/* initialize the wavelength facilities */
-  	for(i=0; i < simParams.NUM_LAMBDAS; i++)
-  	{
-  	   	tempStr[0] = '\0';
-  	   	sprintf(tempStr, "Lambda #%d", i);
-  	   	lambda[i] = facility(tempStr);
-  	   	lambdaFree[i] = 0;					/* record that this lambda is free at time 0 */
-  	}
-  		
+     
   	/* Initialize overall queueing delay table */
   	overallQueueDelay = table("Overall_Queue_Delay");
   	
@@ -1061,85 +954,6 @@ void sim()
    	preferQueueLength = table("Preferred_ONU_Queue_Length");
   	table_confidence(preferQueueLength);
   	
-  	overallGrantSize = table("Overall_Grant_Size");
-  	table_confidence(overallGrantSize);
-  
-  	overallGrantSizePkt = table("Overall_Grant_Size_Pkt");
-    if(simType == ACTUAL_RUN)
-    {
-      	table_histogram(overallGrantSizePkt, 500, 0, overallGrantSizePktEst.maxEst);
-    }
-    else if(simType == TAIL_RUN)
-    {
-      	table_histogram(overallGrantSizePkt, 500, overallGrantSizePktEst.minEst, overallGrantSizePktEst.maxEst);
-    }
-  	table_confidence(overallGrantSizePkt);
-  
-  	heavyGrantSize = table("Heavy_Grant_Size");
-  	table_confidence(heavyGrantSize);
-  
-  	lightGrantSize = table("Light_Grant_Size");
-  	table_confidence(lightGrantSize);
-  
-    overallCycleLength = table("Overall_Grant_Cycle_Len");
-    if(simType == ACTUAL_RUN)
-    {
-      	table_histogram(overallCycleLength, 500, 0.0, overallQueueDelayEst.maxEst);
-    }
-    else if(simType == TAIL_RUN)
-    {
-      	table_histogram(overallCycleLength, 500, overallQueueDelayEst.minEst, overallQueueDelayEst.maxEst);
-    }
-  	table_confidence(overallCycleLength);
-  	if(simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR)
-  	{
-  	  	table_run_length(overallCycleLength, 0.01, 0.95, 10000);
-  	}
-  	else
-  	{
-  	    table_run_length(overallCycleLength, 0.05, 0.90, 10000);
-  	}
-  
-    heavyCycleLength = table("Heavy_Grant_Cycle_Len");
-  	table_confidence(heavyCycleLength);
-  
-   	lightCycleLength = table("Light_Grant_Cycle_Len");
-  	table_confidence(lightCycleLength);
-  
-   	preferCycleLength = table("Preferred_Grant_Cycle_Len");
-  	table_confidence(preferCycleLength);
-  
-   	overallRptToSchedTime = table("REPORT_to_Sched_Time");
-  	table_confidence(overallRptToSchedTime);
-    if(simParams.OLT_TYPE != OLT_ONLINE_NASC && simParams.OLT_TYPE != OLT_IPACT_PSF)
-    {
-      	if (simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) table_run_length(overallRptToSchedTime, 0.01, 0.95, 10000);
-      	else table_run_length(overallRptToSchedTime, 0.05, 0.90, 10000);
-    }
-  
-    heavyRptToSchedTime = table("Heavy_REPORT_to_Sched_Time");
-  	table_confidence(heavyRptToSchedTime);
-  
-  	lightRptToSchedTime = table("Light_REPORT_to_Sched_Time");
-  	table_confidence(lightRptToSchedTime);
-  
-    overallRptToGateTime = table("REPORT_to_GATE_Time");
-  	table_confidence(overallRptToGateTime);
-  	if (simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) table_run_length(overallRptToGateTime, 0.01, 0.95, 10000);
-    else table_run_length(overallRptToGateTime, 0.01, 0.90, 10000);
-  
-  	heavyRptToGateTime = table("Heavy_REPORT_to_GATE_Time");
-  	table_confidence(heavyRptToGateTime);
-  
-    lightRptToGateTime = table("Light_REPORT_to_GATE_Time");
-  	table_confidence(lightRptToGateTime);
-  
-    numONUSched = table("Number_of_ONUs_Scheduled");
-  
-    loadBalanceMeasure = table("Load_Balance");
-  
-    schedRounds = table("Scheduling_Rounds");
-  
     throughputFairness = table("Throughput_Fairness");
   
     compRatio1 = table("Competitive_Ratio_1");
@@ -1148,15 +962,6 @@ void sim()
   
     excessBandwidth = table("Excess_Bandwidth");
     excessBandwidthONU = table("Excess_Bandwidth_ONU");
-  
-    overallGrantRate = meter("Grant_Rate");
-  	meter_confidence(overallGrantRate);
-  
-    heavyGrantRate = meter("Heavy_Grant_Rate");
-  	meter_confidence(heavyGrantRate);
-  
-    lightGrantRate = meter("Light_Grant_Rate");
-  	meter_confidence(lightGrantRate);
   
     overallZeroReqRate = meter("Zero_Request_Rate");
   	meter_confidence(overallZeroReqRate);
@@ -1234,8 +1039,6 @@ void sim()
   	tempStr[0] = '\0'; 
   	sprintf(tempStr, "OLT pkt mb");
   	oltAttrs.pktMailbox = mailbox(tempStr);
-  	
-    olt(); /* spawn the OLT process */
   	  	
     /* Spawn Traffic generator(s) for ONU */
   	/* Start the ONU processes */
@@ -1245,22 +1048,30 @@ void sim()
   	  	{
   	  	  	case TRAFFIC_POISSON:
   	  	  		  traffic_src_poisson(i); /* spawn poisson traffic src for ONU */
-  	  	  		  break;
+  	  	  		  TSprint("traffic_src_poisson #%d has started\n", i);
+                break;
   	  	  	case TRAFFIC_SELF_SIMILAR:
   	  	    		traffic_agg_self_similar(i);	/* spawn the aggregator */
   	  	    		for(j=0;j < simParams.NUM_SS_STREAMS; j++)
   	  	    		{
   	  	    			  traffic_src_self_similar(i,j); /* spawn the individual streams */
   	  	    		}
+  	  	  		  TSprint("traffic_src_self_similar #%d has started\n", i);
   	  	    		break;
   	  	  	default:
   	  	  		  break;
   	   	}
   	}
+
+  	/* spawn the OLT process */
+    olt(); 
   	
-  	/* Start the new ONU process */
-  	onu();
-  
+  	for(i=0; i < simParams.NUM_ONU; i++)
+  	{
+  	    /* Start the ONU process */
+  	    onu(i);
+    }
+ 
     /* Start the throughput calculation process */
     onu_throughput_calc();
   	
@@ -2118,45 +1929,9 @@ void estimate_hist_max()
     overallQueueLengthEst.maxEst = table_max(overallQueueLength);
     heavyQueueLengthEst.maxEst = table_max(heavyQueueLength);
     lightQueueLengthEst.maxEst = table_max(lightQueueLength);
-    overallGrantSizeEst.maxEst = table_max(overallGrantSize);
-    overallGrantSizePktEst.maxEst = table_max(overallGrantSizePkt)*1.2;
-    heavyGrantSizeEst.maxEst = table_max(heavyGrantSize);
-    lightGrantSizeEst.maxEst = table_max(lightGrantSize);
     overallCycleLengthEst.maxEst = table_max(overallCycleLength)*1.2;
     heavyCycleLengthEst.maxEst = table_max(heavyCycleLength);
     lightCycleLengthEst.maxEst = table_max(lightCycleLength);
-    overallRptToSchedTimeEst.maxEst = table_max(overallRptToSchedTime);
-    heavyRptToSchedTimeEst.maxEst = table_max(heavyRptToSchedTime);
-    lightRptToSchedTimeEst.maxEst = table_max(lightRptToSchedTime);
-    overallRptToGateTimeEst.maxEst = table_max(overallRptToGateTime);
-    heavyRptToGateTimeEst.maxEst = table_max(heavyRptToGateTime);
-    lightRptToGateTimeEst.maxEst = table_max(lightRptToGateTime);
-    numONUSchedEst.maxEst = table_max(numONUSched);
-
-    //printf("overallQueueDelayEst.maxEst = %g\n",overallQueueDelayEst.maxEst);
-    //printf("overallQueueDelay table_cnt = %ld, table_min = %g, table_max = %g\n",table_cnt(overallQueueDelay),table_min(overallQueueDelay),table_max(overallQueueDelay));
-    //printf("heavyQueueDelayEst.maxEst = %g\n",heavyQueueDelayEst.maxEst);
-    //printf("lightQueueDelayEst.maxEst = %g\n",lightQueueDelayEst.maxEst);
-    //printf("overallQueueLengthEst.maxEst = %g\n",overallQueueLengthEst.maxEst);
-    //printf("heavyQueueLengthEst.maxEst = %g\n",heavyQueueLengthEst.maxEst);
-    //printf("lightQueueLengthEst.maxEst = %g\n",lightQueueLengthEst.maxEst);
-    //printf("overallGrantSizeEst.maxEst = %g\n",overallGrantSizeEst.maxEst);
-    //printf("overallGrantSizePktEst.maxEst = %g\n",overallGrantSizePktEst.maxEst);
-    //printf("heavyGrantSizeEst.maxEst = %g\n",heavyGrantSizeEst.maxEst);
-    //printf("lightGrantSizeEst.maxEst = %g\n",lightGrantSizeEst.maxEst);
-    //printf("overallCycleLengthEst.maxEst = %g\n",overallCycleLengthEst.maxEst);
-    //printf("heavyCycleLengthEst.maxEst = %g\n",heavyCycleLengthEst.maxEst);
-    //printf("lightCycleLengthEst.maxEst = %g\n",lightCycleLengthEst.maxEst);
-    //printf("overallRptToSchedTimeEst.maxEst = %g\n",overallRptToSchedTimeEst.maxEst);
-    //printf("heavyRptToSchedTimeEst.maxEst = %g\n",heavyRptToSchedTimeEst.maxEst);
-    //printf("lightRptToSchedTimeEst.maxEst = %g\n",lightRptToSchedTimeEst.maxEst);
-    //printf("overallRptToGateTimeEst.maxEst = %g\n",overallRptToGateTimeEst.maxEst);
-    //printf("heavyRptToGateTimeEst.maxEst = %g\n",heavyRptToGateTimeEst.maxEst);
-    //printf("lightRptToGateTimeEst.maxEst = %g\n",lightRptToGateTimeEst.maxEst);
-    //printf("numONUSchedEst.maxEst = %g\n",numONUSchedEst.maxEst);
-    //printf("Calculate Histogram Maximum Estimators\n");
-    //fflush(NULL);
-
 }
 
 void setup_hist_tail()
@@ -2167,48 +1942,25 @@ void setup_hist_tail()
     overallQueueLengthEst.minEst = overallQueueLengthEst.maxEst;
     heavyQueueLengthEst.minEst = heavyQueueLengthEst.maxEst;
     lightQueueLengthEst.minEst = lightQueueLengthEst.maxEst;
-    overallGrantSizeEst.minEst = overallGrantSizeEst.maxEst;
-    overallGrantSizePktEst.minEst = overallGrantSizePktEst.maxEst;
-    heavyGrantSizeEst.minEst = heavyGrantSizeEst.maxEst;
-    lightGrantSizeEst.minEst = lightGrantSizeEst.maxEst;
     overallCycleLengthEst.minEst = overallCycleLengthEst.maxEst;
     heavyCycleLengthEst.minEst = heavyCycleLengthEst.maxEst;
     lightCycleLengthEst.minEst = lightCycleLengthEst.maxEst;
-    overallRptToSchedTimeEst.minEst = overallRptToSchedTimeEst.maxEst;
-    heavyRptToSchedTimeEst.minEst = heavyRptToSchedTimeEst.maxEst;
-    lightRptToSchedTimeEst.minEst = lightRptToSchedTimeEst.maxEst;
-    overallRptToGateTimeEst.minEst = overallRptToGateTimeEst.maxEst;
-    heavyRptToGateTimeEst.minEst = heavyRptToGateTimeEst.maxEst;
-    lightRptToGateTimeEst.minEst = lightRptToGateTimeEst.maxEst;
-    numONUSchedEst.minEst = numONUSchedEst.maxEst;
     overallQueueDelayEst.maxEst = table_max(overallQueueDelay);
     heavyQueueDelayEst.maxEst = table_max(heavyQueueDelay);
     lightQueueDelayEst.maxEst = table_max(lightQueueDelay);
     overallQueueLengthEst.maxEst = table_max(overallQueueLength);
     heavyQueueLengthEst.maxEst = table_max(heavyQueueLength);
     lightQueueLengthEst.maxEst = table_max(lightQueueLength);
-    overallGrantSizeEst.maxEst = table_max(overallGrantSize);
-    overallGrantSizePktEst.maxEst = table_max(overallGrantSizePkt);
-    heavyGrantSizeEst.maxEst = table_max(heavyGrantSize);
-    lightGrantSizeEst.maxEst = table_max(lightGrantSize);
     overallCycleLengthEst.maxEst = table_max(overallCycleLength);
     heavyCycleLengthEst.maxEst = table_max(heavyCycleLength);
     lightCycleLengthEst.maxEst = table_max(lightCycleLength);
-    overallRptToSchedTimeEst.maxEst = table_max(overallRptToSchedTime);
-    heavyRptToSchedTimeEst.maxEst = table_max(heavyRptToSchedTime);
-    lightRptToSchedTimeEst.maxEst = table_max(lightRptToSchedTime);
-    overallRptToGateTimeEst.maxEst = table_max(overallRptToGateTime);
-    heavyRptToGateTimeEst.maxEst = table_max(heavyRptToGateTime);
-    lightRptToGateTimeEst.maxEst = table_max(lightRptToGateTime);
-    numONUSchedEst.maxEst = table_max(numONUSched);
-
 }
 
-void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
+void write_sim_data(int runNumber, double trafficLoad)
 {
     int     loopIndex;
-    char	filename_suffix[100];
-	  char	filename_str[150];
+    char	  filename_suffix[100];
+	  char	  filename_str[150];
     char    double_str[15];
     char    *charPtr;
 
@@ -2224,13 +1976,10 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
     FILE *lbFile;
     FILE *srFile;
     FILE *srmxFile;
-	  FILE *utFile[MAX_LAMBDAS];
-	  FILE *tpFile[MAX_LAMBDAS];
     FILE *tpoFile[MAX_ONU];
     FILE *tfsFile, *tfFile;
     FILE *cr1File, *cr2File, *mcrFile;
     FILE *ebFile, *ebpoFile;
-	  FILE *utxlFile[MAX_LAMBDAS];
     FILE *odHistFile, *clHistFile, *gspHistFile;
     FILE *pdFile, *plFile, *clpFile;
 
@@ -2604,14 +2353,6 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
         fprintf(gspHistFile,"%e-%e %e\n",table_histogram_width(overallGrantSizePkt)*(loopIndex-1),table_histogram_width(overallGrantSizePkt)*loopIndex,(double)((double)((unsigned long)table_histogram_bucket(overallGrantSizePkt,loopIndex))/(double)((unsigned long)table_histogram_total(overallGrantSizePkt))));
     }
     
-    /* Report wavelength utilization */
-    for(loopIndex=0; loopIndex < numLambdas; loopIndex++)
-    {
-        fprintf(utFile[loopIndex],"%f %f\n", trafficLoad, util(lambda[loopIndex]));
-        fprintf(tpFile[loopIndex],"%f %f\n", trafficLoad, tput(lambda[loopIndex]));
-        fprintf(utxlFile[loopIndex],"%f, ", util(lambda[loopIndex]));
-    }
-
     /* Report ONU throughput */
     for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
     {
@@ -2642,14 +2383,6 @@ void write_sim_data(int runNumber, int numLambdas, double trafficLoad)
 
     /* Hack */
     //trafficLoad = simParams.DESIRED_LOAD;
-
-    /* Close files for reporting wavelength utilization */
-    for(loopIndex=0; loopIndex < numLambdas; loopIndex++)
-    {
-        fclose(utFile[loopIndex]);
-        fclose(tpFile[loopIndex]);
-        fclose(utxlFile[loopIndex]);
-    }
 
     /* Close files for reporting ONU throughput */
     for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
@@ -2768,7 +2501,7 @@ int main()
 	  TSprint("main started with PID: %d\n\n", getpid());
 	  
 
-	  int runNum, numLambdas, sim_aborted;
+	  int runNum, sim_aborted;
 	  double trafficLoad;
 	  FILE *pidFile;
 	  
@@ -2786,125 +2519,104 @@ int main()
         // Assign propagation delays to ONUs (One propagation delay setting per parameter sweep)
         onu_prop_delay_distr(runNum);
         
-        for(numLambdas=simParams.START_LAMBDA; numLambdas <= simParams.END_LAMBDA; numLambdas++)
+        test_vars.loadOrderCounter = 0;
+        for(trafficLoad=simParams.START_LOAD; trafficLoad <= (simParams.END_LOAD + 0.0001); trafficLoad += simParams.LOAD_INCR)
         {
-	          // Test Variables main_begin_lambda
-	          test_vars.main_begin_lambda[test_vars.runNum]++;
-	          test_var_print();
-	    	    
-            simParams.NUM_LAMBDAS	= numLambdas;				/* Number of wavelengths supported on PON */
-            test_vars.loadOrderCounter = 0;
-            for(trafficLoad=simParams.START_LOAD; trafficLoad <= (simParams.END_LOAD + 0.0001); trafficLoad += simParams.LOAD_INCR)
+	    	    // Test Variables main_begin_load
+	    	    test_vars.main_begin_load[test_vars.runNum][test_vars.loadOrderCounter]++;
+	    	    test_var_print();
+	    	    TSprint("main_begin_load\t\t\trunNum: %d\t\tutilization: %.1f\n", test_vars.runNum + 1, 0.1*(test_vars.loadOrderCounter + 1));
+	    	
+            sim_aborted = 0;
+            printf("LOAD = %f\n", trafficLoad);
+            simParams.DESIRED_LOAD = trafficLoad;
+      
+            /* Do a pilot run of the simulation to estimate statistics */
+            simType = PILOT_RUN;
+      
+            TSprint("Pilot Run\n");
+      
+ 	    	    // Test Variables main_test
+	    	    test_vars.main_test[test_vars.runNum][test_vars.loadOrderCounter]++;
+	    	    test_var_print();
+
+            sim();
+
+            if(terminateSim != 0)
             {
-	    	        // Test Variables main_begin_load
-	    	        test_vars.main_begin_load[test_vars.runNum][test_vars.loadOrderCounter]++;
-	    	        test_var_print();
-	    	        TSprint("main_begin_load\t\t\trunNum: %d\t\tutilization: %.1f\n", test_vars.runNum + 1, 0.1*(test_vars.loadOrderCounter + 1));
-	              //	fprintf(droppedScalPackets, "Load: %.1f\n", 0.1*(test_vars.loadOrderCounter + 1));
-	    	    
-                sim_aborted = 0;
-                if((trafficLoad + 0.01) >= (double)numLambdas)
-                {
-                    sim_aborted = 1;
-                    continue;
-                }
-                printf("LOAD = %f\n", trafficLoad);
-                simParams.DESIRED_LOAD = trafficLoad;
-                //simParams.PIPG_LOAD = trafficLoad*1.041;
+                terminateSim = 0;
+                fatalErrorCount = 0;
+                rerun();
+                sim_cleanup();
+                fflush(NULL);
+                continue;
+            }
+            
+	    	    /* Estimate histogram maximums */
+            estimate_hist_max();
       
-                /* Do a pilot run of the simulation to estimate statistics */
-                simType = PILOT_RUN;
+            /* Setup the model for next run */
+            rerun();
+            sim_cleanup(); /* perform a memory clean up */
       
-                //printf("Pilot Run\n");
-                //fflush(NULL);
-                TSprint("Pilot Run\n");
+            /* Run the actual simulation */
+            simType = ACTUAL_RUN;
       
- 	    	        // Test Variables main_test
-	    	        test_vars.main_test[test_vars.runNum][test_vars.loadOrderCounter]++;
-	    	        test_var_print();
-
-                sim();
-
-                if(terminateSim != 0)
-                {
-                    terminateSim = 0;
-                    fatalErrorCount = 0;
-                    rerun();
-                    sim_cleanup();
-                    fflush(NULL);
-                    continue;
-                }
-                
-	    	        /* Estimate histogram maximums */
-                estimate_hist_max();
+            TSprint("Actual Run\n");
       
+            sim();
+            fflush(NULL);
+            
+            
+            /* if simulation completes produce output */
+            if(terminateSim == 0)
+            {
+                write_sim_data(runNum,trafficLoad);
+            }
+            else
+            {
+                printf("Simulation terminated, moving to next\n");
+                terminateSim = 0;
+                fatalErrorCount = 0;
+                rerun();
+                sim_cleanup();
+                continue;
+            }
+            
+            if(simParams.GET_TAIL == GET_TAIL_ON)
+            {
+                setup_hist_tail();
                 /* Setup the model for next run */
                 rerun();
                 sim_cleanup(); /* perform a memory clean up */
       
-                /* Run the actual simulation */
-                simType = ACTUAL_RUN;
-      
-                // printf("Actual Run\n");
-                // fflush(NULL);
-                TSprint("Actual Run\n");
-      
+                /* Run the simulation again to get data on the tail of distributions */
+                simType = TAIL_RUN;
                 sim();
-                fflush(NULL);
-                
-                
+      
                 /* if simulation completes produce output */
                 if(terminateSim == 0)
                 {
-                    write_sim_data(runNum,numLambdas,trafficLoad);
+                    write_sim_hist_tail_data(trafficLoad);
                 }
                 else
                 {
-                    printf("Simulation terminated, moving to next\n");
                     terminateSim = 0;
                     fatalErrorCount = 0;
-                    rerun();
-                    sim_cleanup();
-                    continue;
                 }
-                
-                if(simParams.GET_TAIL == GET_TAIL_ON)
-                {
-                    setup_hist_tail();
-                    /* Setup the model for next run */
-                    rerun();
-                    sim_cleanup(); /* perform a memory clean up */
-      
-                    /* Run the simulation again to get data on the tail of distributions */
-                    simType = TAIL_RUN;
-                    sim();
-      
-                    /* if simulation completes produce output */
-                    if(terminateSim == 0)
-                    {
-                        write_sim_hist_tail_data(trafficLoad);
-                    }
-                    else
-                    {
-                        terminateSim = 0;
-                        fatalErrorCount = 0;
-                    }
-                }
-                /* Setup the model for next run */
-                rerun();
-                sim_cleanup(); /* perform a memory clean up */
-                
- 	    	        // Test Variables main_end_load
-	    	        test_vars.main_end_load[test_vars.runNum][test_vars.loadOrderCounter]++;
-	    	        test_var_print();
-	    	        TSprint("main_end_load\n\n\n");
-	    	    
-                test_vars.loadOrderCounter++;
-      	    }
-      	    // Test Variables main_end_lambda
-      	    test_vars.main_end_lambda[test_vars.runNum]++;
-      	    test_var_print();
-        }
+            }
+            /* Setup the model for next run */
+            rerun();
+            sim_cleanup(); /* perform a memory clean up */
+            
+ 	    	    // Test Variables main_end_load
+	    	    test_vars.main_end_load[test_vars.runNum][test_vars.loadOrderCounter]++;
+	    	    test_var_print();
+	    	    TSprint("main_end_load\n\n\n");
+	    	
+            test_vars.loadOrderCounter++;
+      	}
+      	test_var_print();
     }
    	if(!sim_aborted) conclude_csim();
 

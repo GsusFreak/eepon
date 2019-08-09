@@ -52,7 +52,7 @@ for files in os.listdir(pathProfiles):
         pid_file = open(os.path.join(newPath,'pid'), 'w')
         pid_file.close()
         # Print the system command for debug purposes
-        #print('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
+        print('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
          
         # Run the system command.
         # It runs the eponsim file locaded in the code directory but moves the

@@ -169,9 +169,10 @@ void grant_trace_flush()
 /* Packet creation function */
 sENTITY_PKT *create_a_packet(int size, int onuNum)
 {
-	sENTITY_PKT *newPkt;
-	newPkt = (sENTITY_PKT *)(malloc(sizeof(sENTITY_PKT)));
-	test_vars.data_pkt_created[test_vars.runNum][test_vars.loadOrderCounter][onuNum]++;
+  	sENTITY_PKT *newPkt;
+  	newPkt = (sENTITY_PKT *)(malloc(sizeof(sENTITY_PKT)));
+  	test_vars.data_pkt_created[test_vars.runNum][test_vars.loadOrderCounter][onuNum]++;
+  	test_vars.data_pkt_created_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
     if(newPkt != NULL)
     {
         newPkt->creationTime = 0;
@@ -213,6 +214,7 @@ void remove_packet()
 	{
 		oltAttrs.packetQueueNum--;
 		test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
+		test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
 	}
 	free(tmp);
 }
@@ -230,6 +232,7 @@ void remove_all_packets()
     /* Remove this packet from the queue packet count */
     oltAttrs.packetQueueNum--;
     test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
+		test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
     free(tmp);
   }
   oltAttrs.packetsTail = NULL;

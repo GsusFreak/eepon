@@ -79,58 +79,64 @@ void record_packet_stats_dequeue(int onuNum)
 /* Record stats after packet is dequeued */
 void record_packet_stats_dequeue_tx_time(int onuNum)
 {
-	oltAttrs.packetsHead->transmissionTime = simtime() + oltAttrs.packetsHead->size*simParams.TIME_PER_BYTE; // Hack that inclues tx time to check Frank's equation
-	/* Record packet queue time in proper table */
-	record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, oltAttrs.queueTimeTable);
-    	/* Record packet queue time in delay table for cycle based observation */
-	record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, cycleQueueDelay);
-	/* Record packet queue time in overall queueing delay table */
-	record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, overallQueueDelay);
-	if(onuNum < simParams.NUM_HEAVY_ONU)
-	{
-		/* Record packet queue time in Heavy ONU queueing delay table */
-		record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, heavyQueueDelay);
-	}
-	else
-	{
-		/* Record packet queue time in Heavy ONU queueing delay table */
-		record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, lightQueueDelay);
-	}
-	if(onuNum < simParams.NUM_PREFERRED_ONU)
-	{
-		/* Record packet queue time in Preferred ONU queueing delay table */
-		record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, preferQueueDelay);
-	}
-	if((simParams.TRAFFIC_TYPE == TRAFFIC_SELF_SIMILAR) && (simInitPhase == 0))
-	{
-		/* Record confidence interval data for Self-similar traffic */
-		if(((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) < overallQueueDelayStat.intervalLower)
-		   || ((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) > overallQueueDelayStat.intervalUpper))
-		{
-			overallQueueDelayStat.outsideIntervalCount++;
-			if(onuNum < simParams.NUM_HEAVY_ONU)
-			{
-				heavyQueueDelayStat.outsideIntervalCount++;
-			}
-			else
-			{
-				lightQueueDelayStat.outsideIntervalCount++;
-			}
-		}
-		else
-		{
-			overallQueueDelayStat.insideIntervalCount++;
-			if(onuNum < simParams.NUM_HEAVY_ONU)
-			{
-				heavyQueueDelayStat.insideIntervalCount++;
-			}
-			else
-			{
-				lightQueueDelayStat.insideIntervalCount++;
-			}
-			
-		}
-	}
+  if(oltAttrs.packetsHead != NULL)
+  {
+    oltAttrs.packetsHead->transmissionTime = simtime() + oltAttrs.packetsHead->size*simParams.TIME_PER_BYTE; // Hack that inclues tx time to check Frank's equation
+	  /* Record packet queue time in proper table */
+	  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, oltAttrs.queueTimeTable);
+   	/* Record packet queue time in delay table for cycle based observation */
+  	record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, cycleQueueDelay);
+  	/* Record packet queue time in overall queueing delay table */
+  	record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, overallQueueDelay);
+  	if(onuNum < simParams.NUM_HEAVY_ONU)
+  	{
+  		/* Record packet queue time in Heavy ONU queueing delay table */
+  		record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, heavyQueueDelay);
+  	}
+  	else
+  	{
+  		/* Record packet queue time in Heavy ONU queueing delay table */
+  		record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, lightQueueDelay);
+  	}
+  	if(onuNum < simParams.NUM_PREFERRED_ONU)
+  	{
+  		/* Record packet queue time in Preferred ONU queueing delay table */
+  		record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, preferQueueDelay);
+  	}
+  	if((simParams.TRAFFIC_TYPE == TRAFFIC_SELF_SIMILAR) && (simInitPhase == 0))
+  	{
+  		/* Record confidence interval data for Self-similar traffic */
+  		if(((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) < overallQueueDelayStat.intervalLower)
+  		   || ((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) > overallQueueDelayStat.intervalUpper))
+  		{
+  			overallQueueDelayStat.outsideIntervalCount++;
+  			if(onuNum < simParams.NUM_HEAVY_ONU)
+  			{
+  				heavyQueueDelayStat.outsideIntervalCount++;
+  			}
+  			else
+  			{
+  				lightQueueDelayStat.outsideIntervalCount++;
+  			}
+  		}
+  		else
+  		{
+  			overallQueueDelayStat.insideIntervalCount++;
+  			if(onuNum < simParams.NUM_HEAVY_ONU)
+  			{
+  				heavyQueueDelayStat.insideIntervalCount++;
+  			}
+  			else
+  			{
+  				lightQueueDelayStat.insideIntervalCount++;
+  			}
+  		}
+  	}
+  }
+  else
+  {
+    TSprint("It tried to dequeue stats without any packets\n");
+  }
 }
 
 

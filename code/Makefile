@@ -1,4 +1,4 @@
-CC = gcc -m32 -Wall -g
+CC = gcc -m32 -Wall -g -Wextra
 CSIM = -I csim/lib
 
 hungarian.o: hungarian.c hungarian.h

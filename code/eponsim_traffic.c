@@ -72,19 +72,11 @@ void traffic_src_poisson(int onuNum)
 	procId[0] = '\0';
 	sprintf(procId,"TrafficGen #%d",onuNum);
 	create(procId);
-	// printf("Traffic #%d\n",onuNum);
 
 	while(!terminateSim)
 	{
 		/* Generate packets according to a particular distribution */
-		if(onuNum < simParams.NUM_HEAVY_ONU)
-		{
-			hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME_HEAVY));
-		}
-		else
-		{
-			hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
-		}
+		hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
 		pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
 		pktPtr = create_a_packet(pktSize, onuNum);
    	assign_packet(pktPtr);

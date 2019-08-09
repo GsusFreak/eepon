@@ -12,6 +12,6 @@
 #define EPONSIM_OLT_H
 
 /* OLT model */
-void onu();
+void onu(int onuNum);
 
 #endif
