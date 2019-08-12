@@ -27,7 +27,7 @@ void grant_trace_flush();
 /* Packet and GATE message utility functions */
 sENTITY_PKT *create_a_packet(int size, int onuNum);
 void remove_packet();
-void remove_all_packets(int onuNum);
+void remove_all_packets();
 
 /* ONU list utility functions */
 sONU_LIST *onu_list_insert(eSORT_METHOD sortMethod1, eSORT_METHOD sortMethod2, eSORT_CRITERIA sortCriteria1, 

@@ -1,12 +1,3 @@
-/*
-	TITLE: 		EPON Simulator Traffic Models
-	AUTHOR: 	Michael P. McGarry
-	DATE:
-	VERSION:	1.0
-	
-	NOTES:
-	
-*/
 
 #include <stdlib.h>
 #include <math.h>
@@ -20,16 +11,16 @@
 extern EVENT SIM_END_EVENT;
 
 /* Data structures for empirical distribution of packet sizes */
-double	EMPIRICAL_PROB[5]  = { 0.60, 0.04, 0.11, 0.25 };
-double	EMPIRICAL_VALUE[5] = { 64.0, 300.0, 580.0, 1518.0 };
-double	EMPIRICAL_CUTOFF[5];
-long	EMPIRICAL_ALIAS[5];
-char	type[1] = "I";
+double  EMPIRICAL_PROB[5]  = { 0.60, 0.04, 0.11, 0.25 };
+double  EMPIRICAL_VALUE[5] = { 64.0, 300.0, 580.0, 1518.0 };
+double  EMPIRICAL_CUTOFF[5];
+long  EMPIRICAL_ALIAS[5];
+char  type[1] = "I";
 
 /* Pareto distribution random number generator */
 double stream_pareto_epon(STREAM randomStream, double shapeParam, double locationParam)
 {
-    return (locationParam/(pow(stream_uniform(randomStream,0,1),(1/shapeParam))));
+  return (locationParam/(pow(stream_uniform(randomStream,0,1),(1/shapeParam))));
 }
 
 /* Packet assignment function */
@@ -65,24 +56,24 @@ void assign_packet(sENTITY_PKT *pkt)
 /* Process model of a Poisson traffic generator */
 void traffic_src_poisson(int onuNum)
 {
-	int pktSize;
-	sENTITY_PKT *pktPtr;
-	
-	/* Initialize the process */
-	procId[0] = '\0';
-	sprintf(procId,"TrafficGen #%d",onuNum);
-	create(procId);
+  int pktSize;
+  sENTITY_PKT *pktPtr;
+  
+  /* Initialize the process */
+  procId[0] = '\0';
+  sprintf(procId,"TrafficGen #%d",onuNum);
+  create(procId);
 
-	while(!terminateSim)
-	{
-		/* Generate packets according to a particular distribution */
-		hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
-		pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
-		pktPtr = create_a_packet(pktSize, onuNum);
-   	assign_packet(pktPtr);
+  while(!terminateSim)
+  {
+    /* Generate packets according to a particular distribution */
+    hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
+    pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
+    pktPtr = create_a_packet(pktSize, onuNum);
+    assign_packet(pktPtr);
     // printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktSize,onuNum);
-	}
-	
+  }
+  
 }
 
 /* 
@@ -96,70 +87,70 @@ void traffic_src_poisson(int onuNum)
  */
 void traffic_src_self_similar(int onuNum, int streamNum)
 {
-	int pktSize;
-	sENTITY_PKT *pktPtr;
-	double currPktTime, offTime;
-	int burstSize, loop;
-	
-	/* Initialize the process */
-	procId[0] = '\0';
-	sprintf(procId,"TrafficGen %d:%d",onuNum, streamNum);
-	create(procId);	
-	// printf("Traffic #%d for ONU #%d\n",streamNum, onuNum);
+  int pktSize;
+  sENTITY_PKT *pktPtr;
+  double currPktTime, offTime;
+  int burstSize, loop;
+  
+  /* Initialize the process */
+  procId[0] = '\0';
+  sprintf(procId,"TrafficGen %d:%d",onuNum, streamNum);
+  create(procId); 
+  // printf("Traffic #%d for ONU #%d\n",streamNum, onuNum);
 
-	/* Sleep until first ON period */
-	if(onuNum < simParams.NUM_HEAVY_ONU)
-	{
+  /* Sleep until first ON period */
+  if(onuNum < simParams.NUM_HEAVY_ONU)
+  {
     /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
-		offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
-	}
-	else
-	{
+    offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
+  }
+  else
+  {
     /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
-		offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
-	}
-	hold(offTime);
+    offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
+  }
+  hold(offTime);
 
-	while(!terminateSim)
-	{
+  while(!terminateSim)
+  {
     /* Pareto distributed burst size */
-		burstSize = (int) rintf(stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_PARETO_LOC_PARAM));
-		/* Transmit Burst */
-		for(loop=0; loop < burstSize; loop++)
-		{
-			pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
-			pktPtr = create_a_packet(pktSize, onuNum);
-			/* assign_packet(pktPtr, onuNum); */
-			/* Send packet to packet arrival mailbox */
-			send(oltAttrs.pktMailbox, (long) pktPtr);
-			currPktTime = pktSize * simParams.TIME_PER_BYTE + simParams.PREAMBLE_IPG_TIME;
-			hold(currPktTime);
-		}
-		/* Sleep until next ON period */
-		if(onuNum < simParams.NUM_HEAVY_ONU)
-		{
+    burstSize = (int) rintf(stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_PARETO_LOC_PARAM));
+    /* Transmit Burst */
+    for(loop=0; loop < burstSize; loop++)
+    {
+      pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
+      pktPtr = create_a_packet(pktSize, onuNum);
+      /* assign_packet(pktPtr, onuNum); */
+      /* Send packet to packet arrival mailbox */
+      send(oltAttrs.pktMailbox, (long) pktPtr);
+      currPktTime = pktSize * simParams.TIME_PER_BYTE + simParams.PREAMBLE_IPG_TIME;
+      hold(currPktTime);
+    }
+    /* Sleep until next ON period */
+    if(onuNum < simParams.NUM_HEAVY_ONU)
+    {
       /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
       offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM_HEAVY);
-		}
-		else
-		{
+    }
+    else
+    {
       /* Obtain a Pareto distributed random number (using Uniform distribution transformation) */
       offTime = stream_pareto_epon(oltAttrs.pktInterArrivalStream,simParams.SS_PARETO_SHAPE_PARAM,simParams.SS_OFF_LOC_PARAM);
-		}
-		/*
-		 * Factor out Preamble and IPG time from OFF time period
-		 * This way the load is computed as Ethernet frames only
-		 */
-		if(offTime >= (simParams.PREAMBLE_IPG_TIME*burstSize))
-		{
-			offTime -= (simParams.PREAMBLE_IPG_TIME*burstSize);
-		}
-		else
-		{
-			offTime = 0;
-		}
-		hold(offTime);
-	}
+    }
+    /*
+     * Factor out Preamble and IPG time from OFF time period
+     * This way the load is computed as Ethernet frames only
+     */
+    if(offTime >= (simParams.PREAMBLE_IPG_TIME*burstSize))
+    {
+      offTime -= (simParams.PREAMBLE_IPG_TIME*burstSize);
+    }
+    else
+    {
+      offTime = 0;
+    }
+    hold(offTime);
+  }
 }
 
 /* 
@@ -171,36 +162,36 @@ void traffic_src_self_similar(int onuNum, int streamNum)
  */
 void traffic_agg_self_similar(int onuNum)
 {
-	sENTITY_PKT *pktPtr;
-	double currPktTime;
+  sENTITY_PKT *pktPtr;
+  double currPktTime;
 
-	/* Initialize the process */
-	procId[0] = '\0';
-	sprintf(procId,"TrafficAgg %d",onuNum);
-	create(procId);	
-	// printf("Traffic Agg for ONU #%d\n",onuNum);
+  /* Initialize the process */
+  procId[0] = '\0';
+  sprintf(procId,"TrafficAgg %d",onuNum);
+  create(procId); 
+  // printf("Traffic Agg for ONU #%d\n",onuNum);
 
-	while(!terminateSim)
-	{
-		/* Get packet from mailbox */
-		receive(oltAttrs.pktMailbox, (long *) &pktPtr);
+  while(!terminateSim)
+  {
+    /* Get packet from mailbox */
+    receive(oltAttrs.pktMailbox, (long *) &pktPtr);
 
-		/* Place in Queue for ONU */
-		assign_packet(pktPtr);
+    /* Place in Queue for ONU */
+    assign_packet(pktPtr);
 
     /* Check for excessive buffer size */
-		if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
-		{
-			fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
-			dump_sim_core();
-		}
+    if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
+    {
+      fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
+      dump_sim_core();
+    }
 
-		// printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktPtr->size,onuNum);
+    // printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktPtr->size,onuNum);
 
-		/* expire time to transmit packet */
-		currPktTime = pktPtr->size * simParams.TIME_PER_BYTE + simParams.PREAMBLE_IPG_TIME;
-		hold(currPktTime);
-	}
+    /* expire time to transmit packet */
+    currPktTime = pktPtr->size * simParams.TIME_PER_BYTE + simParams.PREAMBLE_IPG_TIME;
+    hold(currPktTime);
+  }
 }
 
 
@@ -212,98 +203,98 @@ void traffic_agg_self_similar(int onuNum)
    
 int get_line(FILE *input, char *line, int maxlen)
 {
-	char c;              /* c is the next character, i the loop counter */
-    int i;               /* read in until we have EOF or end-of-line    */
-    int exit_iaa = 1;
-	
-	for (i = 0; (i < maxlen-1) && ((c = fgetc(input)) != EOF) && (c != '\n'); i++)
-    {
-		if (c == '#') {
-			while (exit_iaa) {
-				c = fgetc(input);
-				if (c == '\n') {
-					c = fgetc(input);
-					if (c != '#') exit_iaa = 0;
-				}
-			}
-		}
-		if (c != '\t')	line[i] = c;
-		else if (c == '\t' && i != 0)
-		{
-			line[i] = '\0';          /* terminate the string */
-			return 500;
-		}
-		else 
-		{
-			line[i] = '\0';	
-			return 250;
-		}
+  char c;              /* c is the next character, i the loop counter */
+  int i;               /* read in until we have EOF or end-of-line    */
+  int exit_iaa = 1;
+  
+  for (i = 0; (i < maxlen-1) && ((c = fgetc(input)) != EOF) && (c != '\n'); i++)
+  {
+    if (c == '#') {
+      while (exit_iaa) {
+        c = fgetc(input);
+        if (c == '\n') {
+          c = fgetc(input);
+          if (c != '#') exit_iaa = 0;
+        }
+      }
     }
-	if ((c == '\n') && (line[0] != '#')) 
-	{
-		line[i] = '\0';          /* terminate the string */
-		return 1000;
-	}
-	
-	if (c == EOF)
-	{
-		line[i] = '\0';          /* terminate the string */
-		return 2000;
-	}
+    if (c != '\t')  line[i] = c;
+    else if (c == '\t' && i != 0)
+    {
+      line[i] = '\0';          /* terminate the string */
+      return 500;
+    }
+    else 
+    {
+      line[i] = '\0'; 
+      return 250;
+    }
+  }
+  if ((c == '\n') && (line[0] != '#')) 
+  {
+    line[i] = '\0';          /* terminate the string */
+    return 1000;
+  }
+  
+  if (c == EOF)
+  {
+    line[i] = '\0';          /* terminate the string */
+    return 2000;
+  }
         
-
-    return i;                /* return the length */
+  return i;                /* return the length */
 }
 
 int get_line2(FILE *input, char *line, int maxlen)
 {
-	char c;              /* c is the next character, i the loop counter */
-    int i;               /* read in until we have EOF or end-of-line    */
-    int exit_iaa = 1;
-	
-	for (i = 0; (i < maxlen-1) && ((c = fgetc(input)) != EOF) && (c != '\n'); i++)
-    {
-		if (c == '#') {
-			while (exit_iaa) {
-				c = fgetc(input);
-				if (c == '\n') {
-					c = fgetc(input);
-					if (c != '#') exit_iaa = 0;
-				}
-			}
-		}
-		if (c != '\t')	line[i] = c;
-		else if (c == '\t' && i != 0)
-		{
-			line[i] = '\0';          /* terminate the string */
-			return 500;
-		}
-		else 
-		{
-			line[i] = '\0';	
-			return 250;
-		}
-    }
-	if ((c == '\n') && (line[0] != '#')) 
-	{
-		line[i] = '\0';          /* terminate the string */
-		return 1000;
-	}
-	
-	if ((c == '\n') && (line[0] == '#')) 
-	{
-		line[i] = '\0';          /* terminate the string */
-		return -1;
-	}	
-	
-	if (c == EOF)
-	{
-		line[i] = '\0';          /* terminate the string */
-		return 2000;
-	}
-        
+  char c;              /* c is the next character, i the loop counter */
+  int i;               /* read in until we have EOF or end-of-line    */
+  int exit_iaa = 1;
 
-    return i;                /* return the length */
+  for (i = 0; (i < maxlen-1) && ((c = fgetc(input)) != EOF) && (c != '\n'); i++)
+  {
+    if (c == '#') {
+      while (exit_iaa) {
+        c = fgetc(input);
+        if (c == '\n') {
+          c = fgetc(input);
+          if (c != '#') exit_iaa = 0;
+        }
+      }
+    }
+    if (c != '\t')  line[i] = c;
+    else if (c == '\t' && i != 0)
+    {
+      line[i] = '\0';          /* terminate the string */
+      return 500;
+    }
+    else 
+    {
+      line[i] = '\0'; 
+      return 250;
+    }
+  }
+  if ((c == '\n') && (line[0] != '#')) 
+  {
+    line[i] = '\0';          /* terminate the string */
+    return 1000;
+  }
+  
+  if ((c == '\n') && (line[0] == '#')) 
+  {
+    line[i] = '\0';          /* terminate the string */
+    return -1;
+  } 
+  
+  if (c == EOF)
+  {
+    line[i] = '\0';          /* terminate the string */
+    return 2000;
+  }
+
+  return i;                /* return the length */
 }
+
+
 
 
