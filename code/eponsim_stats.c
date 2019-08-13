@@ -10,6 +10,8 @@ int minSwitch = 1;
 double minQueueDelay;
 
 
+//record_packet_stats_finish(currPkt.onuNum, &currPkt);
+
 /* Record stats after packet arrival */
 void record_packet_stats_finish(sENTITY_PKT *pkt)
 {
@@ -68,6 +70,22 @@ void record_packet_stats_dequeue(int onuNum)
   }
 }
 
+
+/* Record stats for queue length */
+void record_stats_queue_length(int onuNum)
+{
+  /* Record queue length in proper table */
+  record(oltAttrs.packetQueueSize, oltAttrs.queueLengthTable);
+  record(oltAttrs.packetQueueSize, overallQueueLength);
+  if(onuNum < simParams.NUM_HEAVY_ONU)
+  {
+    record(oltAttrs.packetQueueSize, heavyQueueLength);
+  }
+  else
+  {
+    record(oltAttrs.packetQueueSize, lightQueueLength);
+  }
+}
 
 
 /* Record stats after packet is dequeued */

@@ -85,15 +85,17 @@ void olt()
     {
       if(oltAttrs.packetsHead == NULL)
       {
-        // If there are no packets, simply a short period of time 
+        // If there are no packets, simply wait a short period of time 
         transmitPkt = 0;
-        hold(simParams.TIME_PER_BYTE*10);
+        //hold(simParams.TIME_PER_BYTE*10);
+        hold(1.0);
       }
       else
       {
+        record_stats_queue_length(currPkt.onuNum);
         /* transmit a packet */
         /* collect statistics on this packet */
-        record_packet_stats_dequeue_tx_time(currPkt.onuNum);
+        record_packet_stats_dequeue(currPkt.onuNum);
         /* Copy packet to temporary data structure */
         currPkt.creationTime = oltAttrs.packetsHead->creationTime;
         currPkt.transmissionTime = oltAttrs.packetsHead->transmissionTime;
@@ -116,11 +118,8 @@ void olt()
         oltAttrs.transmitByteCnt += currPkt.size;
         
         /* Collect statistics on this packet */
-        record_packet_stats_finish(currPkt.onuNum, &currPkt);
+        record_packet_stats_finish(&currPkt);
       }
-
-      /* Record number of packets transmitted */
-      //record(txPktCount,overallGrantSizePkt);
     }
   }
 }

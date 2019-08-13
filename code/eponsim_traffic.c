@@ -73,7 +73,7 @@ void traffic_src_poisson(int onuNum)
     assign_packet(pktPtr);
     // printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktSize,onuNum);
   }
-  
+  TSprint("traffic_src_poisson #%d has ended\n", onuNum);
 }
 
 /* 

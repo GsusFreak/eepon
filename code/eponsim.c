@@ -30,8 +30,6 @@ sONU onuAttrs[MAX_ONU];
 sSCHED_POOL schedPool[MAX_ONU];
 int schedPoolCount;
 
-FACILITY lambda[MAX_LAMBDAS];   /* each wavelength is modeled as a facility */
-
 double  lambdaFree[MAX_LAMBDAS];  /* array to keep track of lambda free times */
 double  lambdaFreeTemp[MAX_LAMBDAS];/* array to keep track of lambda free times (temp version) */
 
@@ -48,51 +46,32 @@ double ideal_tput_olt;
 TABLE   throughputFairness;
 
 TABLE   overallQueueDelay;
-TABLE   queueDelay;
 TABLE   cycleQueueDelay;
-
 TABLE   heavyQueueDelay;
 TABLE   lightQueueDelay;
+
 TABLE   overallQueueLength;
 TABLE   heavyQueueLength;
 TABLE   lightQueueLength;
 
-TABLE   overallCycleLength;
-TABLE   heavyCycleLength;
-TABLE   lightCycleLength;
-
-TABLE   compRatio1;
-TABLE   compRatio2;
-TABLE   minCompRatio;
-
 sSTAT_EST overallQueueDelayEst;
 sSTAT_EST heavyQueueDelayEst;
 sSTAT_EST lightQueueDelayEst;
+
 sSTAT_EST overallQueueLengthEst;
 sSTAT_EST heavyQueueLengthEst;
 sSTAT_EST lightQueueLengthEst;
-sSTAT_EST overallCycleLengthEst;
-sSTAT_EST heavyCycleLengthEst;
-sSTAT_EST lightCycleLengthEst;
-
 
 sSS_STAT  overallQueueDelayStat;
 sSS_STAT  heavyQueueDelayStat;
 sSS_STAT  lightQueueDelayStat;
+
 sSS_STAT  overallQueueLengthStat;
 sSS_STAT  heavyQueueLengthStat;
 sSS_STAT  lightQueueLengthStat;
 
-METER   overallZeroReqRate;
-METER   heavyZeroReqRate;
-METER   lightZeroReqRate;
-METER   overallNonzeroReqRate;
-METER   heavyNonzeroReqRate;
-METER   lightNonzeroReqRate;
-
-double      overallQueueDelayTrace[MAX_TRACE_VALUES];
-double      overallCycleLengthTrace[MAX_TRACE_VALUES];
-double      simTimeTrace[MAX_TRACE_VALUES];
+double    overallQueueDelayTrace[MAX_TRACE_VALUES];
+double    simTimeTrace[MAX_TRACE_VALUES];
 
 /* Parameters for self-similar traffic. */
 
@@ -181,6 +160,7 @@ void test_var_print()
   
   fprintf(indicatorFile, "last_updated_at: %10.5e\n", simtime());
   fprintf(indicatorFile, "heartbeat_process: %.0f\n", test_vars.heartbeat_process);
+  //fprintf(indicatorFile, "Num Queues Serviced: %ld\n", table_cnt(overallQueueDelay));
   fprintf(indicatorFile, "\n");
   fprintf(indicatorFile, "main_start  = %.0f\n", test_vars.main_start);
   fprintf(indicatorFile, "main_finish = %.0f\n", test_vars.main_finish);
@@ -210,12 +190,12 @@ void test_var_print()
       for (icc = 0; icc < numONUs; icc++) {
         fprintf(indicatorFile, "ONU  #%02d: ", icc+1);
         fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created[iaa][ibb][icc]);
-        fprintf(indicatorFile, "           data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed[iaa][ibb][icc]);
+        fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed[iaa][ibb][icc]);
         fprintf(indicatorFile, "\n");
       }
-      fprintf(indicatorFile, "OLT: ");
+      fprintf(indicatorFile, "OLT:      ");
       fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created_olt[iaa][ibb]);
-      fprintf(indicatorFile, "     data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed_olt[iaa][ibb]);
+      fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed_olt[iaa][ibb]);
       fprintf(indicatorFile, "\n");
     }
     fprintf(indicatorFile, "\n");
@@ -324,7 +304,6 @@ void close_TS_pointers() {
     fclose(ONU_files[ONUid]);
   }
 #endif
-  fclose(droppedScalPackets);
   return;
 }
 
@@ -613,18 +592,6 @@ void heartbeat_with_timetrace()
       fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallQueueDelayTrace[loopIndex]);
     }
     fclose(simCtrlFile);
-    /* cycle length */
-    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES-1; loopIndex++)
-    {
-      overallCycleLengthTrace[loopIndex] = overallCycleLengthTrace[loopIndex+1];
-    }
-    overallCycleLengthTrace[MAX_TRACE_VALUES-1] = table_conf_mean(overallCycleLength);
-    simCtrlFile = fopen("cl_trc","w");
-    for(loopIndex=0; loopIndex < MAX_TRACE_VALUES; loopIndex++)
-    {
-      fprintf(simCtrlFile,"%e %e\n",simTimeTrace[loopIndex],overallCycleLengthTrace[loopIndex]);
-    }
-    fclose(simCtrlFile);
     /* Print heartbeat */
     if(beat == 0)
     {
@@ -744,27 +711,28 @@ void sim_ctrl()
       hold(0.1);
     }
     reset();
-    if(simParams.TRAFFIC_TYPE == TRAFFIC_POISSON)
+    //if(simParams.TRAFFIC_TYPE == TRAFFIC_POISSON)
+    //{
+    //  /* Wait for CI convergence */
+    //  wait(converged);    /* Overall Queue delay */
+    //}
+    //else
+    //{
+    //  //hold(simParams.SIM_TIME);
+    //  while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e6))
+    //  {
+    //    hold(60);
+    //  }
+    //}
+    while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e3))
     {
-      /* Wait for CI convergence */
-      wait(converged);    /* Overall Queue delay */
-      wait(converged);    /* Overall Cycle Length */
-    }
-    else
-    {
-      //hold(simParams.SIM_TIME);
-      while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e6))
-      {
-        hold(60);
-      }
+      hold(60);
+      TSprint("D\n");
     }
   }
 
-  if(simType != ACTUAL_RUN)
-  {
-    /* Simulation is completed, set SIM_END global event */
-    set(SIM_END_EVENT);
-  }
+  /* Simulation is completed, set SIM_END global event */
+  set(SIM_END_EVENT);
 }
 
 
@@ -813,6 +781,16 @@ void sim()
   /* Setup error handler */
   set_err_handler((*sim_err_handler));
   
+  /* Start heartbeat */
+  if(simParams.SIM_TRACE == SIM_TRACE_ON)
+  {
+    heartbeat_with_timetrace();
+  }
+  else
+  {
+    heartbeat();
+  }
+  
   rand_seed = simParams.RAND_SEED;
    
   /* Initialize overall queueing delay table */
@@ -830,9 +808,6 @@ void sim()
   
   if (simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) table_run_length(overallQueueDelay, 0.01, 0.95, 10000);
   else table_run_length(overallQueueDelay, 0.05, 0.90, 10000);
-  
-  queueDelay = table("Queue_Delay");
-  cycleQueueDelay = table("Cycle_Queue_Delay");
   
   /* Initialize Heavy ONU queueing delay table */
   heavyQueueDelay = table("Heavy_ONU_Queue_Delay");
@@ -852,28 +827,6 @@ void sim()
   table_confidence(lightQueueLength);
   
   throughputFairness = table("Throughput_Fairness");
-  
-  compRatio1 = table("Competitive_Ratio_1");
-  compRatio2 = table("Competitive_Ratio_2");
-  minCompRatio = table("Min_Competitive_Ratio");
-  
-  overallZeroReqRate = meter("Zero_Request_Rate");
-  meter_confidence(overallZeroReqRate);
-  
-  heavyZeroReqRate = meter("Heavy_Zero_Request_Rate");
-  meter_confidence(heavyZeroReqRate);
-  
-  lightZeroReqRate = meter("Light_Zero_Request_Rate");
-  meter_confidence(lightZeroReqRate);
-  
-  overallNonzeroReqRate = meter("NonZero_Request_Rate");
-  meter_confidence(overallNonzeroReqRate);
-  
-  heavyNonzeroReqRate = meter("Heavy_NonZero_Request_Rate");
-  meter_confidence(heavyNonzeroReqRate);
-  
-  lightNonzeroReqRate = meter("Light_NonZero_Request_Rate");
-  meter_confidence(lightNonzeroReqRate);
   
   /* setup empirical distribution for packet sizes */
   setup_empirical(EMPIRICAL_SIZE, EMPIRICAL_PROB, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS);
@@ -904,10 +857,6 @@ void sim()
   sprintf(tempStr, "Throughput for OLT");
   oltAttrs.transmitThroughput = table(tempStr);
   table_confidence(oltAttrs.transmitThroughput);
-  oltAttrs.zeroReqRate = meter("Zero Request Rate");
-  meter_confidence(oltAttrs.zeroReqRate);
-  oltAttrs.nonzeroReqRate = meter("Non-Zero Request Rate");
-  meter_confidence(oltAttrs.nonzeroReqRate);
   /* setup ONU latency */
   for(i=0; i < simParams.NUM_ONU; i++)
   {
@@ -993,12 +942,25 @@ void sim()
     test_vars.sim_finish2[test_vars.runNum][test_vars.loadOrderCounter][1]++;
     test_var_print();
   }
+  TSprint("sim_finish2\n");
   
   if(!terminateSim)
   {
     /* If simulation terminated normally, then dump stat report */
+    report_facilities();
+    report_classes();
+    report_tables();
+    report_storages();
+    report_buffers();
+    report_events();
+    report_mailboxes();
+    report_qtables();
+    report_meters();
+    report_boxes();
+    
     report();
   }
+  TSprint("sim_finish3\n");
 }
 
 /* 
@@ -1220,9 +1182,6 @@ void estimate_hist_max()
   overallQueueLengthEst.maxEst = table_max(overallQueueLength);
   heavyQueueLengthEst.maxEst = table_max(heavyQueueLength);
   lightQueueLengthEst.maxEst = table_max(lightQueueLength);
-  overallCycleLengthEst.maxEst = table_max(overallCycleLength)*1.2;
-  heavyCycleLengthEst.maxEst = table_max(heavyCycleLength);
-  lightCycleLengthEst.maxEst = table_max(lightCycleLength);
 }
 
 void setup_hist_tail()
@@ -1233,18 +1192,12 @@ void setup_hist_tail()
   overallQueueLengthEst.minEst = overallQueueLengthEst.maxEst;
   heavyQueueLengthEst.minEst = heavyQueueLengthEst.maxEst;
   lightQueueLengthEst.minEst = lightQueueLengthEst.maxEst;
-  overallCycleLengthEst.minEst = overallCycleLengthEst.maxEst;
-  heavyCycleLengthEst.minEst = heavyCycleLengthEst.maxEst;
-  lightCycleLengthEst.minEst = lightCycleLengthEst.maxEst;
   overallQueueDelayEst.maxEst = table_max(overallQueueDelay);
   heavyQueueDelayEst.maxEst = table_max(heavyQueueDelay);
   lightQueueDelayEst.maxEst = table_max(lightQueueDelay);
   overallQueueLengthEst.maxEst = table_max(overallQueueLength);
   heavyQueueLengthEst.maxEst = table_max(heavyQueueLength);
   lightQueueLengthEst.maxEst = table_max(lightQueueLength);
-  overallCycleLengthEst.maxEst = table_max(overallCycleLength);
-  heavyCycleLengthEst.maxEst = table_max(heavyCycleLength);
-  lightCycleLengthEst.maxEst = table_max(lightCycleLength);
 }
 
 void write_sim_data(int runNumber, double trafficLoad)
@@ -1256,7 +1209,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   char    *charPtr;
 
   FILE *odFile, *hdFile, *ldFile, *olFile, *hlFile, *llFile, *statsFile;
-  FILE *qdFile;
   FILE *odxlFile, *hdxlFile, *ldxlFile, *olxlFile, *hlxlFile, *llxlFile;
   FILE *clFile, *rsFile, *gsFile, *gspFile, *noFile;
   FILE *cllFile, *clhFile, *rslFile, *rshFile, *gslFile, *gshFile;
@@ -1270,7 +1222,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *tpoFile[MAX_ONU];
   FILE *tfsFile, *tfFile;
   FILE *cr1File, *cr2File, *mcrFile;
-  FILE *odHistFile, *clHistFile, *gspHistFile;
+  FILE *odHistFile, *gspHistFile;
   FILE *pdFile, *plFile, *clpFile;
 
   /* Determine file names */
@@ -1300,9 +1252,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   filename_str[0] = '\0';
   sprintf(filename_str, "od_%s", filename_suffix);
   odFile = fopen(filename_str,"a");
-  filename_str[0] = '\0';
-  sprintf(filename_str, "qd_%s", filename_suffix);
-  qdFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
   sprintf(filename_str, "odo_%s", filename_suffix);
   odoFile = fopen(filename_str,"a");
@@ -1418,9 +1367,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   sprintf(filename_str, "od_hist_%s_%s", double_str, filename_suffix);
   odHistFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "cl_hist_%s_%s", double_str, filename_suffix);
-  clHistFile  = fopen(filename_str,"a");
-  filename_str[0] = '\0';
   sprintf(filename_str, "gsp_hist_%s_%s", double_str, filename_suffix);
   gspHistFile = fopen(filename_str,"a");
 
@@ -1475,9 +1421,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   fprintf(statsFile,"cpu_time=%e\n", cputime());
   fprintf(statsFile,"sim_time/cpu_time=%e\n", simtime()/cputime());
 
-  fprintf(statsFile,"percent_nonzero_req=%e,heavy_percent_nonzero_req=%e,light_percent_nonzero_req=%e\n",meter_rate(overallNonzeroReqRate)/(meter_rate(overallZeroReqRate)+meter_rate(overallNonzeroReqRate)), meter_rate(heavyNonzeroReqRate)/(meter_rate(heavyZeroReqRate)+meter_rate(heavyNonzeroReqRate)), meter_rate(lightNonzeroReqRate)/(meter_rate(lightZeroReqRate)+meter_rate(lightNonzeroReqRate)));
-  fprintf(statsFile,"req_rate=%e,heavy_reg_rate=%e,light_reg_rate=%e\n",(meter_rate(overallZeroReqRate)+meter_rate(overallNonzeroReqRate)), (meter_rate(heavyZeroReqRate)+meter_rate(heavyNonzeroReqRate)), (meter_rate(lightZeroReqRate)+meter_rate(lightNonzeroReqRate)));
-
   if((simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) /*&& (simParams.OLT_TYPE != OLT_APS)*/)
   {
     /* Collect stats in files */
@@ -1485,20 +1428,11 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(odmnFile,"%f %e\n", trafficLoad, table_min(overallQueueDelay));
     fprintf(odmxFile,"%f %e\n", trafficLoad, table_max(overallQueueDelay));
     fprintf(odFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueDelay), table_conf_lower(overallQueueDelay, 0.95), table_conf_upper(overallQueueDelay, 0.95), 0.95);
-    fprintf(qdFile,"%f %e\n", trafficLoad, table_mean(queueDelay));
     fprintf(hdFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyQueueDelay), table_conf_lower(heavyQueueDelay, 0.95), table_conf_upper(heavyQueueDelay, 0.95), 0.95);
     fprintf(ldFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightQueueDelay), table_conf_lower(lightQueueDelay, 0.95), table_conf_upper(lightQueueDelay, 0.95), 0.95);
     fprintf(olFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueLength), table_conf_lower(overallQueueLength, 0.95), table_conf_upper(overallQueueLength, 0.95), 0.95);
     fprintf(hlFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyQueueLength), table_conf_lower(heavyQueueLength, 0.95), table_conf_upper(heavyQueueLength, 0.95), 0.95);
     fprintf(llFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightQueueLength), table_conf_lower(lightQueueLength, 0.95), table_conf_upper(lightQueueLength, 0.95), 0.95);
-    fprintf(clFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallCycleLength), table_conf_lower(overallCycleLength, 0.95), table_conf_upper(overallCycleLength, 0.95), 0.95);
-    fprintf(clmnFile,"%f %e\n", trafficLoad, table_min(overallCycleLength));
-    fprintf(clmxFile,"%f %e\n", trafficLoad, table_max(overallCycleLength));
-    fprintf(cllFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightCycleLength), table_conf_lower(lightCycleLength, 0.95), table_conf_upper(lightCycleLength, 0.95), 0.95);
-    fprintf(clhFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyCycleLength), table_conf_lower(heavyCycleLength, 0.95), table_conf_upper(heavyCycleLength, 0.95), 0.95);
-    fprintf(nzFile,"%f %e\n", trafficLoad, meter_rate(overallNonzeroReqRate)/(meter_rate(overallZeroReqRate)+meter_rate(overallNonzeroReqRate)));
-    fprintf(nzlFile,"%f %e\n", trafficLoad, meter_rate(lightNonzeroReqRate)/(meter_rate(lightZeroReqRate)+meter_rate(lightNonzeroReqRate)));
-    fprintf(nzhFile,"%f %e\n", trafficLoad, meter_rate(heavyNonzeroReqRate)/(meter_rate(heavyZeroReqRate)+meter_rate(heavyNonzeroReqRate)));
   
     fprintf(odxlFile,"%e, ", table_conf_mean(overallQueueDelay));
     fprintf(hdxlFile,"%e, ", table_conf_mean(heavyQueueDelay));
@@ -1507,7 +1441,6 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(hlxlFile,"%e, ", table_conf_mean(heavyQueueLength));
     fprintf(llxlFile,"%e, ", table_conf_mean(lightQueueLength));
 
-    fprintf(statsFile,"avg_cycle_time = %e +/- %e, (mean=%e,var=%e,min=%e,max=%e,cnt=%ld)\n",table_conf_mean(overallCycleLength),table_conf_halfwidth(overallCycleLength, 0.95),table_mean(overallCycleLength),table_var(overallCycleLength),table_min(overallCycleLength),table_max(overallCycleLength),table_cnt(overallCycleLength));
     fprintf(statsFile,"overallQueueDelay = %e +/- %e (mean=%e,var=%e,min=%e,max=%e,cnt=%ld), heavyQueueDelay = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), lightQueueDelay = %e +/- %e (mean=%e,var=%e,min=%e,max=%e)\n", table_conf_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.95), table_mean(overallQueueDelay), table_var(overallQueueDelay), table_min(overallQueueDelay), table_max(overallQueueDelay), table_cnt(overallQueueDelay), table_conf_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.95), table_mean(heavyQueueDelay), table_var(heavyQueueDelay), table_min(heavyQueueDelay), table_max(heavyQueueDelay), table_conf_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.95), table_mean(lightQueueDelay), table_var(lightQueueDelay), table_min(lightQueueDelay), table_max(lightQueueDelay));
     fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e)\n", table_conf_mean(oltAttrs.queueTimeTable),  table_conf_halfwidth(oltAttrs.queueTimeTable, 0.95), table_mean(oltAttrs.queueTimeTable), table_var(oltAttrs.queueTimeTable), table_min(oltAttrs.queueTimeTable), table_max(oltAttrs.queueTimeTable), table_conf_mean(oltAttrs.queueLengthTable), table_conf_halfwidth(oltAttrs.queueLengthTable, 0.95), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable));
   }
@@ -1519,20 +1452,11 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(odmxFile,"%f %e\n", trafficLoad, table_max(overallQueueDelay));
     fprintf(odFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueDelay), table_conf_lower(overallQueueDelay, 0.90), table_conf_upper(overallQueueDelay, 0.90), 0.90);
     
-    fprintf(qdFile,"%f %e\n", trafficLoad, table_mean(queueDelay));
     fprintf(hdFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyQueueDelay), table_conf_lower(heavyQueueDelay, 0.90), table_conf_upper(heavyQueueDelay, 0.90), 0.90);
     fprintf(ldFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightQueueDelay), table_conf_lower(lightQueueDelay, 0.90), table_conf_upper(lightQueueDelay, 0.90), 0.90);
     fprintf(olFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueLength), table_conf_lower(overallQueueLength, 0.90), table_conf_upper(overallQueueLength, 0.90), 0.90);
     fprintf(hlFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyQueueLength), table_conf_lower(heavyQueueLength, 0.90), table_conf_upper(heavyQueueLength, 0.90), 0.90);
     fprintf(llFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightQueueLength), table_conf_lower(lightQueueLength, 0.90), table_conf_upper(lightQueueLength, 0.90), 0.90);
-    fprintf(clFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallCycleLength), table_conf_lower(overallCycleLength, 0.90), table_conf_upper(overallCycleLength, 0.90), 0.90);
-    fprintf(clmnFile,"%f %e\n", trafficLoad, table_min(overallCycleLength));
-    fprintf(clmxFile,"%f %e\n", trafficLoad, table_max(overallCycleLength));
-    fprintf(cllFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightCycleLength), table_conf_lower(lightCycleLength, 0.90), table_conf_upper(lightCycleLength, 0.90), 0.90);
-    fprintf(clhFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyCycleLength), table_conf_lower(heavyCycleLength, 0.90), table_conf_upper(heavyCycleLength, 0.90), 0.90);
-    fprintf(nzFile,"%f %e\n", trafficLoad, meter_rate(overallNonzeroReqRate)/(meter_rate(overallZeroReqRate)+meter_rate(overallNonzeroReqRate)));
-    fprintf(nzlFile,"%f %e\n", trafficLoad, meter_rate(lightNonzeroReqRate)/(meter_rate(lightZeroReqRate)+meter_rate(lightNonzeroReqRate)));
-    fprintf(nzhFile,"%f %e\n", trafficLoad, meter_rate(heavyNonzeroReqRate)/(meter_rate(heavyZeroReqRate)+meter_rate(heavyNonzeroReqRate)));
     
     fprintf(odxlFile,"%e, ", table_conf_mean(overallQueueDelay));
     fprintf(hdxlFile,"%e, ", table_conf_mean(heavyQueueDelay));
@@ -1541,8 +1465,6 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(hlxlFile,"%e, ", table_conf_mean(heavyQueueLength));
     fprintf(llxlFile,"%e, ", table_conf_mean(lightQueueLength));
     
-    fprintf(statsFile,"avg_cycle_time (batch_size=%lu,num_batches=%lu,converged=%d,acc=%g)\n",table_batch_size(overallCycleLength),table_batch_count(overallCycleLength),table_converged(overallCycleLength),table_conf_accuracy(overallCycleLength,0.90));
-    fprintf(statsFile,"avg_cycle_time = %e +/- %e, (mean=%e,var=%e,min=%e,max=%e,cnt=%ld)\n",table_conf_mean(overallCycleLength),table_conf_halfwidth(overallCycleLength, 0.90),table_mean(overallCycleLength),table_var(overallCycleLength),table_min(overallCycleLength),table_max(overallCycleLength),table_cnt(overallCycleLength));
     fprintf(statsFile,"overallQueueDelay (batch_size=%lu,num_batches=%lu,converged=%d,acc=%g)\n",table_batch_size(overallQueueDelay),table_batch_count(overallQueueDelay),table_converged(overallQueueDelay),table_conf_accuracy(overallQueueDelay,0.90));
     fprintf(statsFile,"overallQueueDelay = %e +/- %e (mean=%e,var=%e,min=%e,max=%e,cnt=%lu), heavyQueueDelay = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), lightQueueDelay = %e +/- %e (mean=%e,var=%e,min=%e,max=%e)\n", table_conf_mean(overallQueueDelay), table_conf_halfwidth(overallQueueDelay, 0.90), table_mean(overallQueueDelay), table_var(overallQueueDelay), table_min(overallQueueDelay), table_max(overallQueueDelay), table_cnt(overallQueueDelay), table_conf_mean(heavyQueueDelay), table_conf_halfwidth(heavyQueueDelay, 0.90), table_mean(heavyQueueDelay), table_var(heavyQueueDelay), table_min(heavyQueueDelay), table_max(heavyQueueDelay),  table_conf_mean(lightQueueDelay), table_conf_halfwidth(lightQueueDelay, 0.90), table_mean(lightQueueDelay), table_var(lightQueueDelay), table_min(lightQueueDelay), table_max(lightQueueDelay));
     fprintf(statsFile,"qTime = %e +/- %e (mean=%e,var=%e,min=%e,max=%e), qLen = %e +/- %e (mean=%e,var=%e,min=%e,max=%e)\n", table_conf_mean(oltAttrs.queueTimeTable),  table_conf_halfwidth(oltAttrs.queueTimeTable, 0.90), table_mean(oltAttrs.queueTimeTable), table_var(oltAttrs.queueTimeTable), table_min(oltAttrs.queueTimeTable), table_max(oltAttrs.queueTimeTable), table_conf_mean(oltAttrs.queueLengthTable), table_conf_halfwidth(oltAttrs.queueLengthTable, 0.90), table_mean(oltAttrs.queueLengthTable), table_var(oltAttrs.queueLengthTable), table_min(oltAttrs.queueLengthTable), table_max(oltAttrs.queueLengthTable));
@@ -1553,11 +1475,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   {
     /* Print frequency for each bucket */
     fprintf(odHistFile,"%e-%e %e\n",table_histogram_width(overallQueueDelay)*(loopIndex-1),table_histogram_width(overallQueueDelay)*loopIndex,(double)((double)((unsigned long)table_histogram_bucket(overallQueueDelay,loopIndex))/(double)((unsigned long)table_histogram_total(overallQueueDelay))));
-  }
-  for(loopIndex=1; loopIndex <= table_histogram_num(overallCycleLength); loopIndex++)
-  {
-    /* Print frequency for each bucket */
-    fprintf(clHistFile,"%e-%e %e\n",table_histogram_width(overallCycleLength)*(loopIndex-1),table_histogram_width(overallCycleLength)*loopIndex,(double)((double)((unsigned long)table_histogram_bucket(overallCycleLength,loopIndex))/(double)((unsigned long)table_histogram_total(overallCycleLength))));
   }
   
   /* Report ONU throughput */
@@ -1573,13 +1490,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   /* Record throughput fairness for the whole simulation run */
   fprintf(tfFile,"%f %g\n", trafficLoad, rj_fairness_index(actual_tput,ideal_tput,simParams.NUM_ONU));
 
-  /* Record competitive ratio data */
-  fprintf(cr1File,"%f %g %g %g %g\n", trafficLoad, table_mean(compRatio1), table_min(compRatio1), table_max(compRatio1), table_var(compRatio1));
-  fprintf(cr2File,"%f %g %g %g %g\n", trafficLoad, table_mean(compRatio2), table_min(compRatio2), table_max(compRatio2), table_var(compRatio2));
-  fprintf(mcrFile,"%f %g %g %g %g\n", trafficLoad, table_mean(minCompRatio), table_min(minCompRatio), table_max(minCompRatio), table_var(minCompRatio));
-
   fprintf(statsFile, "od_hist  (num=%lu,total=%lu,low=%e,high=%e)\n",table_histogram_num(overallQueueDelay),table_histogram_total(overallQueueDelay),table_histogram_low(overallQueueDelay),table_histogram_high(overallQueueDelay));
-  fprintf(statsFile, "cl_hist  (num=%lu,total=%lu,low=%e,high=%e)\n",table_histogram_num(overallCycleLength),table_histogram_total(overallCycleLength),table_histogram_low(overallCycleLength),table_histogram_high(overallCycleLength));
 
   fprintf(statsFile, "\n\n");
 
@@ -1591,7 +1502,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   fclose(odoFile);
   fclose(odFile);
   
-  fclose(qdFile);
   fclose(odmnFile);
   fclose(odmxFile);
   fclose(hdFile);
@@ -1623,7 +1533,6 @@ void write_sim_data(int runNumber, double trafficLoad)
   fclose(nzlFile);
   fclose(nzhFile);
   fclose(odHistFile);
-  fclose(clHistFile);
   fclose(gspHistFile);
   fclose(odxlFile);
   fclose(hdxlFile);
@@ -1647,14 +1556,11 @@ void write_sim_hist_tail_data(double trafficLoad)
   int loopIndex;
   char  filename_suffix[100];
   char  filename_str[150];
-  FILE *odHistFile, *clHistFile, *gspHistFile;
+  FILE *odHistFile, *gspHistFile;
 
   filename_str[0] = '\0';
   sprintf(filename_str, "od_hist_tail_%d_%d_%s", (int)floor(trafficLoad+0.0001), (int)((trafficLoad+0.0001-(int)floor(trafficLoad+0.0001))*10), filename_suffix);
   odHistFile  = fopen(filename_str,"a");
-  filename_str[0] = '\0';
-  sprintf(filename_str, "cl_hist_tail_%d_%d_%s", (int)floor(trafficLoad+0.0001), (int)((trafficLoad+0.0001-(int)floor(trafficLoad+0.0001))*10), filename_suffix);
-  clHistFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
   sprintf(filename_str, "gsp_hist_tail_%d_%d_%s", (int)floor(trafficLoad+0.0001), (int)((trafficLoad+0.0001-(int)floor(trafficLoad+0.0001))*10), filename_suffix);
   gspHistFile = fopen(filename_str,"a");
@@ -1665,14 +1571,8 @@ void write_sim_hist_tail_data(double trafficLoad)
     /* Print frequency for each bucket */
     fprintf(odHistFile,"%e-%e %e\n",table_histogram_width(overallQueueDelay)*(loopIndex-1)+overallQueueDelayEst.minEst,table_histogram_width(overallQueueDelay)*loopIndex+overallQueueDelayEst.minEst,(double)((double)((unsigned long)table_histogram_bucket(overallQueueDelay,loopIndex))/(double)((unsigned long)table_histogram_total(overallQueueDelay))));
   }
-  for(loopIndex=1; loopIndex <= table_histogram_num(overallCycleLength); loopIndex++)
-  {
-    /* Print frequency for each bucket */
-    fprintf(clHistFile,"%e-%e %e\n",table_histogram_width(overallCycleLength)*(loopIndex-1)+overallQueueDelayEst.minEst,table_histogram_width(overallCycleLength)*loopIndex+overallQueueDelayEst.minEst,(double)((double)((unsigned long)table_histogram_bucket(overallCycleLength,loopIndex))/(double)((unsigned long)table_histogram_total(overallCycleLength))));
-  }
 
   fclose(odHistFile);
-  fclose(clHistFile);
   fclose(gspHistFile);
 }
 
@@ -1756,9 +1656,9 @@ int main()
       TSprint("Actual Run\n");
     
       sim();
+      TSprint("0\n"); 
       fflush(NULL);
-      
-      
+     
       /* if simulation completes produce output */
       if(terminateSim == 0)
       {

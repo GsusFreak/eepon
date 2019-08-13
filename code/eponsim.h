@@ -289,8 +289,6 @@ typedef struct
   TABLE         transmitTimeTable;
   TABLE         queueTimeTable;
   TABLE         queueLengthTable;
-  METER         zeroReqRate;
-  METER         nonzeroReqRate;
   STREAM        pktInterArrivalStream;
   STREAM        pktSizeStream;
   STREAM        burstSizeStream;
@@ -307,8 +305,6 @@ typedef struct
   double      latency;
   double      rtt;
   int         tslotStart;
-  METER       zeroReqRate;
-  METER       nonzeroReqRate;
   STREAM      burstSizeStream;
   double      transmitByteCnt;
   TABLE       transmitThroughput;
@@ -424,43 +420,26 @@ extern long     EMPIRICAL_ALIAS[5];
 
 /* CSIM Data Collection Variables */
 extern TABLE    overallQueueDelay;
-extern TABLE    queueDelay;
-
 extern TABLE    cycleQueueDelay;
 extern TABLE    heavyQueueDelay;
 extern TABLE    lightQueueDelay;
+
 extern TABLE    overallQueueLength;
 extern TABLE    heavyQueueLength;
 extern TABLE    lightQueueLength;
 
-extern TABLE    overallCycleLength;
-extern TABLE    heavyCycleLength;
-extern TABLE    lightCycleLength;
-
-extern TABLE    compRatio1;
-extern TABLE    compRatio2;
-extern TABLE    minCompRatio;
-
-extern METER    overallZeroReqRate;
-extern METER    heavyZeroReqRate;
-extern METER    lightZeroReqRate;
-extern METER    overallNonzeroReqRate;
-extern METER    heavyNonzeroReqRate;
-extern METER    lightNonzeroReqRate;
-
 extern sSTAT_EST  overallQueueDelayEst;
 extern sSTAT_EST  heavyQueueDelayEst;
 extern sSTAT_EST  lightQueueDelayEst;
+
 extern sSTAT_EST  overallQueueLengthEst;
 extern sSTAT_EST  heavyQueueLengthEst;
 extern sSTAT_EST  lightQueueLengthEst;
-extern sSTAT_EST  overallCycleLengthEst;
-extern sSTAT_EST  heavyCycleLengthEst;
-extern sSTAT_EST  lightCycleLengthEst;
 
 extern sSS_STAT   overallQueueDelayStat;
 extern sSS_STAT   heavyQueueDelayStat;
 extern sSS_STAT   lightQueueDelayStat;
+
 extern sSS_STAT   overallQueueLengthStat;
 extern sSS_STAT   heavyQueueLengthStat;
 extern sSS_STAT   lightQueueLengthStat;
