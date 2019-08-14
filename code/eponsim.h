@@ -213,16 +213,16 @@ double  maximumGrantCycle;
 typedef struct
 {
   /* parameters directly set */
-  int   TRAFFIC_TYPE;
-  int   NUM_RUNS;         /* Number of independent runs */
-  int   NUM_ONU;    /* Number of ONUs on PON */
-  int   NUM_HEAVY_ONU;    /* Number of heavily loaded ONUs */
-  int   NUM_SS_STREAMS;   /* Number of Self Similar Traffic Generator Streams */
+  int       TRAFFIC_TYPE;
+  int       NUM_RUNS;         /* Number of independent runs */
+  int       NUM_ONU;    /* Number of ONUs on PON */
+  int       NUM_HEAVY_ONU;    /* Number of heavily loaded ONUs */
+  int       NUM_SS_STREAMS;   /* Number of Self Similar Traffic Generator Streams */
   double    SS_HURST_PARAM;   /* Hurst Parameter for Self-Similar Traffic Generator */
   double    LINK_SPEED;   /* link speed in bps */
   double    DESIRED_LOAD;   /* desired traffic load */
   double    PIPG_LOAD;    /* traffic load with Preamble/IPG */
-  int   HEAVY_LOAD;       /* heavy load (measured in number of times greater than a lightly loaded ONU) */
+  int       HEAVY_LOAD;       /* heavy load (measured in number of times greater than a lightly loaded ONU) */
   double    TUNING_TIME;    /* tuning time for tunable lasers */
   double    SIM_TIME;         /* total simulation time */
   double    START_LOAD;
@@ -233,6 +233,7 @@ typedef struct
   double    SIM_TRACE_TIME;
   int       SIM_TRACE;
   int       GET_TAIL;   /* Get tails for histogram (each simulation will run twice!!!) */
+  double    OLT_FRAME_TIME;
   
   /* parameters calculated from specified parameters */
   int     NUM_PARTS;    /* Number of bandwidth partitions */
@@ -298,6 +299,8 @@ typedef struct
 
 
 /* ONU attribute structure */
+typedef enum {ONU_ST_ACTIVE, ONU_ST_IDLE, ONU_ST_SLEEP, ONU_ST_PROBE, FINAL_eONU_STATE_ENTRY} eONU_STATE;
+
 typedef struct
 {
   double      minArrivalTime;   /* Minimum arrival time in Queue */
@@ -308,8 +311,11 @@ typedef struct
   STREAM      burstSizeStream;
   double      transmitByteCnt;
   TABLE       transmitThroughput;
+  
+  eONU_STATE  state;
+  double      timeInState[FINAL_eONU_STATE_ENTRY];
+  double      timeStateStarted; 
 } sONU;
-
 
 /* Schedueing Pool Data Structure */
 typedef struct
@@ -362,16 +368,16 @@ typedef struct
  */
 struct onu_list
 {
-  int   onuNum;
-  int   posNum;
+  int            onuNum;
+  int            posNum;
   unsigned long  grantLen;  /* in bytes */
   unsigned long  numFrames; /* in frames */
-  double          grantTime;  /* in seconds */
-  double          poolTime; /* in seconds */
-  double          minArrivalTime; /* in seconds */
-  double          avgArrivalTime; /* in seconds */
-  double    latency;  /* in seconds */
-  struct onu_list *next;
+  double         grantTime;  /* in seconds */
+  double         poolTime; /* in seconds */
+  double         minArrivalTime; /* in seconds */
+  double         avgArrivalTime; /* in seconds */
+  double         latency;  /* in seconds */
+  struct         onu_list *next;
 };
 typedef struct onu_list sONU_LIST;
 
@@ -444,6 +450,8 @@ extern sSS_STAT   overallQueueLengthStat;
 extern sSS_STAT   heavyQueueLengthStat;
 extern sSS_STAT   lightQueueLengthStat;
 
+extern EVENT SERVICE_OLT;
+
 /* Reset throughput flag */
 extern int    reset_throughput_flag;
 /* Throughput Fairness data structures */
@@ -496,6 +504,8 @@ typedef struct
           main_test[10][20],
           main_begin_load[10][20],
           main_end_load[10][20],
+          sim_time_per_load[10][20],
+          sim_time_per_load_start[10][20],
           sim_start[10][20][2],
           sim_process[10][20][2],
           sim_before_ONU_processes[10][20][2],
@@ -507,8 +517,8 @@ typedef struct
           data_pkt_destroyed[10][20][64],
           data_pkt_created_olt[10][20],
           data_pkt_destroyed_olt[10][20];
-  int loadOrderCounter,
-      runNum;
+  int     loadOrderCounter,
+          runNum;
 } sIndicators;
 
 // Declare Global Test Variables

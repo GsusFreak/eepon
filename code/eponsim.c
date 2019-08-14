@@ -18,6 +18,8 @@
 
 /* Simulation End Event */
 EVENT SIM_END_EVENT;
+/* Service Olt Event */
+//EVENT SERVICE_OLT;
 
 /* simulation parameters data structure */
 sSIM_PARAMS simParams;
@@ -29,13 +31,6 @@ sONU onuAttrs[MAX_ONU];
 /* Scheduling Pool structure array */
 sSCHED_POOL schedPool[MAX_ONU];
 int schedPoolCount;
-
-double  lambdaFree[MAX_LAMBDAS];  /* array to keep track of lambda free times */
-double  lambdaFreeTemp[MAX_LAMBDAS];/* array to keep track of lambda free times (temp version) */
-
-double downstreamFree;              /* keeps track of availability of downstream channel (assumes only GATE messages) */
-
-int   lambdaAssign[MAX_LAMBDAS];  /* array to keep track of lambda ONU assignments */
 
 /* Throughput Fairness data structures */
 double actual_tput[MAX_ONU];
@@ -113,8 +108,8 @@ sONU_LIST *trcList[MAX_LAMBDAS];
 
 // Declare eponsim.c Troubleshooting Variables
 int   numRuns = 1,
-  numLoadLevels = 9,
-  numONUs = 32;
+      numLoadLevels = 9,
+      numONUs = 32;
 // FILE *traceFileDave;
 
 int TSprint(const char *text, ...)
@@ -160,7 +155,8 @@ void test_var_print()
   
   fprintf(indicatorFile, "last_updated_at: %10.5e\n", simtime());
   fprintf(indicatorFile, "heartbeat_process: %.0f\n", test_vars.heartbeat_process);
-  //fprintf(indicatorFile, "Num Queues Serviced: %ld\n", table_cnt(overallQueueDelay));
+  if(overallQueueDelay != NULL)
+    fprintf(indicatorFile, "Num Queues Serviced: %ld\n", table_cnt(overallQueueDelay));
   fprintf(indicatorFile, "\n");
   fprintf(indicatorFile, "main_start  = %.0f\n", test_vars.main_start);
   fprintf(indicatorFile, "main_finish = %.0f\n", test_vars.main_finish);
@@ -174,6 +170,7 @@ void test_var_print()
     int ibb;
     for (ibb = 0; ibb < numLoadLevels; ibb++) {
       fprintf(indicatorFile, "Load #%d\n", ibb + 1);
+      fprintf(indicatorFile, "sim_time        = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
       fprintf(indicatorFile, "main_begin_load = %.0f\n", test_vars.main_begin_load[iaa][ibb]);
       fprintf(indicatorFile, "main_end_load   = %.0f\n", test_vars.main_end_load[iaa][ibb]);
       fprintf(indicatorFile, "\n");
@@ -196,10 +193,24 @@ void test_var_print()
       fprintf(indicatorFile, "OLT:      ");
       fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created_olt[iaa][ibb]);
       fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed_olt[iaa][ibb]);
+      fprintf(indicatorFile, "sim_time = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
       fprintf(indicatorFile, "\n");
     }
-    fprintf(indicatorFile, "\n");
+    fprintf(indicatorFile, "\n\n");
   }
+
+  // Print a summary of the interesting information at the bottom
+  for (iaa = 0; iaa < numRuns; iaa++) {
+    fprintf(indicatorFile, "-- Run #%d --", iaa + 1);
+    fprintf(indicatorFile, "\n");
+    int ibb;
+    for (ibb = 0; ibb < numLoadLevels; ibb++) {
+      fprintf(indicatorFile, "Load #%d - ", ibb + 1);
+      fprintf(indicatorFile, "sim_time = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
+    }
+  }
+  fprintf(indicatorFile, "\n\n");
+  
   fflush(indicatorFile);
   fclose(indicatorFile);
   
@@ -220,6 +231,8 @@ void test_var_init()
   for (iaa = 0; iaa < 10; iaa++) {
     int ibb; // Once for each load level
     for (ibb = 0; ibb < 20; ibb++) {
+      test_vars.sim_time_per_load[iaa][ibb] = 0;
+      test_vars.sim_time_per_load_start[iaa][ibb] = 0;
       test_vars.main_begin_load[iaa][ibb] = 0;
       test_vars.main_end_load[iaa][ibb] = 0;
       test_vars.main_test[iaa][ibb] = 0;
@@ -387,8 +400,8 @@ void init_data_structures()
   terminateSim = 0;
   schedPoolCount = 0;
   reset_throughput_flag = 0;
-  oltAttrs.packetsHead    = NULL;
-  oltAttrs.packetsTail    = NULL;
+  oltAttrs.packetsHead = NULL;
+  oltAttrs.packetsTail = NULL;
   oltAttrs.packetQueueSize  = 0;
   oltAttrs.packetQueueNum = 0;
   oltAttrs.transmitByteCnt  = 0;
@@ -396,6 +409,10 @@ void init_data_structures()
   {
     onuAttrs[i].latency   = 0;
     onuAttrs[i].transmitByteCnt = 0;
+    onuAttrs[i].state = ONU_ST_ACTIVE;
+    onuAttrs[i].timeStateStarted = 0;
+    for(int ibb=0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
+      onuAttrs[i].timeInState[ibb] = 0;
   }
   
   /* initialize time trace data structures */
@@ -659,6 +676,10 @@ void heartbeat()
     test_vars.heartbeat_process++;
     test_var_print();
         
+    // Test Variables sim_time_per_load
+    test_vars.sim_time_per_load[test_vars.runNum][test_vars.loadOrderCounter] = simtime() - test_vars.sim_time_per_load_start[test_vars.runNum][test_vars.loadOrderCounter];
+    test_var_print();
+    
     /* Print heartbeat */
     if(beat == 0)
     {
@@ -724,10 +745,9 @@ void sim_ctrl()
     //    hold(60);
     //  }
     //}
-    while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e3))
+    while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e5))
     {
-      hold(60);
-      TSprint("D\n");
+      hold(1);
     }
   }
 
@@ -879,7 +899,13 @@ void sim()
   tempStr[0] = '\0'; 
   sprintf(tempStr, "OLT pkt mb");
   oltAttrs.pktMailbox = mailbox(tempStr);
-      
+  
+  /* Initialize the Simulation End Event */
+  SIM_END_EVENT = event("Sim End");
+  
+  /* Initialize the Olt Service Event */
+  //SERVICE_OLT = event("OLT Needs to be Serviced");
+    
   /* Spawn Traffic generator(s) for ONU */
   /* Start the ONU processes */
   for(i=0; i < simParams.NUM_ONU; i++)
@@ -915,9 +941,6 @@ void sim()
   /* Start the throughput calculation process for both onu and olt*/
   onu_throughput_calc();
   
-  /* Initialize the Simulation End Event */
-  SIM_END_EVENT = event("Sim End");
-  
   // Test Variabels sim_finish
   if (simType == PILOT_RUN) {
     test_vars.sim_finish[test_vars.runNum][test_vars.loadOrderCounter][0]++;
@@ -933,7 +956,7 @@ void sim()
   sim_ctrl();
   wait(SIM_END_EVENT);
   
-  // Test Variabels sim_finish2
+  // Test Variables sim_finish2
   if (simType == PILOT_RUN) {
     test_vars.sim_finish2[test_vars.runNum][test_vars.loadOrderCounter][0]++;
     test_var_print();
@@ -995,6 +1018,7 @@ void read_sim_cfg_file()
   simParams.START_LOAD    = 0.1;
   simParams.END_LOAD    = 0.9;
   simParams.LOAD_INCR   = 0.1;
+  simParams.OLT_FRAME_TIME = 0.0125;
 
   /* Generate Random Number Seed */
   simParams.RAND_SEED = 200100;
@@ -1014,7 +1038,7 @@ void read_sim_cfg_file()
   
   /* Simulation Trace Time */
   simParams.SIM_TRACE_TIME = 1000;  /* sim trace time in seconds */
-  simParams.SIM_TRACE_TIMESCALE = 10;   /* sim trace timescale in seconds */
+  simParams.SIM_TRACE_TIMESCALE = 0.5;   /* sim trace timescale in seconds */
 
   /* open the config file */
   if((cfgFile = fopen("sim_cfg","r")) == NULL)
@@ -1087,6 +1111,12 @@ void read_sim_cfg_file()
         fscanf(cfgFile, "%s", currToken);
         simParams.END_LOAD = atof(currToken);
         //printf("END_LOAD = %e\n", simParams.END_LOAD);
+      }
+      else if(strcmp(currToken, "OLT_FRAME_TIME") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.OLT_FRAME_TIME = atof(currToken);
+        //printf("OLT_FRAME_TIME = %e\n", simParams.OLT_FRAME_TIME);
       }
       else if(strcmp(currToken, "LOAD_INCR") == 0)
       {
@@ -1652,6 +1682,10 @@ int main()
     
       /* Run the actual simulation */
       simType = ACTUAL_RUN;
+      
+      // Test Variables sim_time_per_load_start
+      test_vars.sim_time_per_load_start[test_vars.runNum][test_vars.loadOrderCounter] = simtime();
+      test_var_print();
     
       TSprint("Actual Run\n");
     
@@ -1659,6 +1693,10 @@ int main()
       TSprint("0\n"); 
       fflush(NULL);
      
+      // Test Variables sim_time_per_load
+      test_vars.sim_time_per_load[test_vars.runNum][test_vars.loadOrderCounter] = simtime() - test_vars.sim_time_per_load_start[test_vars.runNum][test_vars.loadOrderCounter];
+      test_var_print();
+
       /* if simulation completes produce output */
       if(terminateSim == 0)
       {

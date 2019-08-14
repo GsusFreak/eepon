@@ -127,6 +127,12 @@ void bsort_double_descend(double numbers[], int array_size)
   }
 }
 
+void changeState(int onuNum, eONU_STATE stateNew)
+{
+  onuAttrs[onuNum].timeInState[stateNew] += simtime() - onuAttrs[onuNum].timeStateStarted;
+  onuAttrs[onuNum].state = stateNew; 
+  onuAttrs[onuNum].timeStateStarted = simtime();
+}
 
 /* Packet creation function */
 sENTITY_PKT *create_a_packet(int size, int onuNum)

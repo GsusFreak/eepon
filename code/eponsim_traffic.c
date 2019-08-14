@@ -71,6 +71,10 @@ void traffic_src_poisson(int onuNum)
     pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
     pktPtr = create_a_packet(pktSize, onuNum);
     assign_packet(pktPtr);
+    
+    // Tell the OLT that a packet has arrived
+    //set(SERVICE_OLT);
+    
     // printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktSize,onuNum);
   }
   TSprint("traffic_src_poisson #%d has ended\n", onuNum);
@@ -179,6 +183,9 @@ void traffic_agg_self_similar(int onuNum)
     /* Place in Queue for ONU */
     assign_packet(pktPtr);
 
+    // Tell the OLT that a packet has arrived
+    //set(SERVICE_OLT);
+    
     /* Check for excessive buffer size */
     if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
     {

@@ -70,6 +70,8 @@ void olt()
     /* Reset the loop variables */
     txPktCount = 0;
     transmitPkt = 1;
+    double frameTimeRemaining = 0;
+    int END_OF_FRAME = 0;
       
     // Service the OLT packet queue
        
@@ -81,44 +83,66 @@ void olt()
       transmitPkt = 0;
     }
     
-    while(transmitPkt)
+    // Reset the EndOfFrame flag
+    END_OF_FRAME = 0;
+    frameTimeRemaining = simParams.OLT_FRAME_TIME;
+    while(transmitPkt && END_OF_FRAME == 0)
     {
       if(oltAttrs.packetsHead == NULL)
       {
-        // If there are no packets, simply wait a short period of time 
+        // If there are no packets, simply wait until the next OLT frame 
         transmitPkt = 0;
-        //hold(simParams.TIME_PER_BYTE*10);
-        hold(1.0);
+        hold(frameTimeRemaining);
+
+        //wait(SERVICE_OLT);
       }
       else
       {
-        record_stats_queue_length(currPkt.onuNum);
-        /* transmit a packet */
-        /* collect statistics on this packet */
-        record_packet_stats_dequeue(currPkt.onuNum);
         /* Copy packet to temporary data structure */
         currPkt.creationTime = oltAttrs.packetsHead->creationTime;
         currPkt.transmissionTime = oltAttrs.packetsHead->transmissionTime;
         currPkt.arrivalTime = oltAttrs.packetsHead->arrivalTime;
         currPkt.size = oltAttrs.packetsHead->size;
-  
-        /* remove packet */
-        remove_packet();    
         
         packet_transmission_time = (currPkt.size)*simParams.TIME_PER_BYTE;
         
-        // result = timed_reserve(1, 0.0);
-        hold(packet_transmission_time);
-        // release(lambda[1]);
+        if(frameTimeRemaining >= packet_transmission_time)
+        {
+          /* collect statistics on this packet */
+          record_stats_queue_length(currPkt.onuNum);
+          record_packet_stats_dequeue(currPkt.onuNum);
+          
+          /* remove packet */
+          remove_packet();    
+          
+          hold(packet_transmission_time);
     
-        /* Increment transmitted packet counter */
-        txPktCount++;
+          /* Increment transmitted packet counter */
+          txPktCount++;
     
-        /* Incremement throughput statistics per ONU*/
-        oltAttrs.transmitByteCnt += currPkt.size;
-        
-        /* Collect statistics on this packet */
-        record_packet_stats_finish(&currPkt);
+          /* Incremement throughput statistics per ONU*/
+          oltAttrs.transmitByteCnt += currPkt.size;
+          
+          /* Collect statistics on this packet */
+          record_packet_stats_finish(&currPkt);
+
+          ///* Make sure that any SERVICE_OLT events that happened while
+          // * serviceing the queue don't immediately trigger the OLT
+          // * again.
+          // */
+          //clear(SERVICE_OLT);
+
+          // Subtract the transmission time from the remaining 
+          // frame time.
+          frameTimeRemaining -= packet_transmission_time;
+        }
+        else
+        {
+          // If there's no time left to transmit packets in this frame, 
+          // end the frame.
+          END_OF_FRAME = 1;
+          transmitPkt = 0;
+        }
       }
     }
   }
