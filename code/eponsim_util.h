@@ -28,7 +28,7 @@ void changeState(int onuNum, eONU_STATE stateNew);
 
 /* Packet and GATE message utility functions */
 sENTITY_PKT *create_a_packet(int size, int onuNum);
-void remove_packet();
+void remove_packet(int onuNum);
 void remove_all_packets();
 
 

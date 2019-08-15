@@ -203,9 +203,6 @@ double      maximumGrantCycle;
     } \
   } } while(0)
     
-double  remainingVideoGrantLength;
-double  maximumGrantCycle;
-
 /*
  * Type definitions
  */
@@ -235,7 +232,15 @@ typedef struct
   int       GET_TAIL;   /* Get tails for histogram (each simulation will run twice!!!) */
   double    OLT_FRAME_TIME;
   
-  /* parameters calculated from specified parameters */
+  double    ACTIVE_POWER_CONSUMPTION;
+  double    IDLE_POWER_CONSUMPTION;
+  double    SLEEP_POWER_CONSUMPTION;
+  double    PROBE_POWER_CONSUMPTION;
+  double    ONU_TIME_SLEEP;
+  double    ONU_TIME_TRIGGER;
+  double    ONU_TIME_WAKEUP;
+  double    ONU_TIME_PROBE;
+
   int     NUM_PARTS;    /* Number of bandwidth partitions */
   double  LINK_SPEED_PER_PART;  /* in bps */
   double  AVG_PKT_INTER_ARVL_TIME;
@@ -279,8 +284,8 @@ typedef struct entity_pkt
 /* OLT attribute structure */
 typedef struct
 {
-  sENTITY_PKT   *packetsHead;
-  sENTITY_PKT   *packetsTail;
+  sENTITY_PKT   *packetsHead[MAX_ONU];
+  sENTITY_PKT   *packetsTail[MAX_ONU];
   double        packetQueueSize;  /* Packet Queue Size (in bytes) */
   unsigned long packetQueueNum;   /* # of Packets in Queue */
   double        minArrivalTime;   /* Minimum arrival time in Queue */
@@ -451,6 +456,8 @@ extern sSS_STAT   heavyQueueLengthStat;
 extern sSS_STAT   lightQueueLengthStat;
 
 extern EVENT SERVICE_OLT;
+extern EVENT PACKET_ARRIVED[MAX_ONU];
+extern EVENT ONU_HAS_NO_QUEUED_PACKETS[MAX_ONU];
 
 /* Reset throughput flag */
 extern int    reset_throughput_flag;

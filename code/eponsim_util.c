@@ -160,11 +160,11 @@ sENTITY_PKT *create_a_packet(int size, int onuNum)
 }
 
 /* Remove a packet entity from the system */
-void remove_packet()
+void remove_packet(int onuNum)
 {
   sENTITY_PKT *tmp;
-  tmp = oltAttrs.packetsHead;
-  oltAttrs.packetsHead = oltAttrs.packetsHead->next;
+  tmp = oltAttrs.packetsHead[onuNum];
+  oltAttrs.packetsHead[onuNum] = oltAttrs.packetsHead[onuNum]->next;
   /* Remove this packets size from the queue size */
   oltAttrs.packetQueueSize -= tmp->size;
   /* Remove this packet from the queue packet count */
@@ -191,19 +191,22 @@ void remove_packet()
 void remove_all_packets()
 {
   sENTITY_PKT *tmp;
-  while(oltAttrs.packetsHead != NULL)
+  for(int onuNum = 0; onuNum < simParams.NUM_ONU; onuNum++)
   {
-    tmp = oltAttrs.packetsHead;
-    oltAttrs.packetsHead = oltAttrs.packetsHead->next;
-    /* Remove this packets size from the queue size */
-    oltAttrs.packetQueueSize -= tmp->size;
-    /* Remove this packet from the queue packet count */
-    oltAttrs.packetQueueNum--;
-    test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
-    test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
-    free(tmp);
+    while(oltAttrs.packetsHead[onuNum] != NULL)
+    {
+      tmp = oltAttrs.packetsHead[onuNum];
+      oltAttrs.packetsHead[onuNum] = oltAttrs.packetsHead[onuNum]->next;
+      /* Remove this packets size from the queue size */
+      oltAttrs.packetQueueSize -= tmp->size;
+      /* Remove this packet from the queue packet count */
+      oltAttrs.packetQueueNum--;
+      test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
+      test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
+      free(tmp);
+    }
+    oltAttrs.packetsTail[onuNum] = NULL;
   }
-  oltAttrs.packetsTail = NULL;
 }
 
 

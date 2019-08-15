@@ -16,10 +16,11 @@
 #include "eponsim_olt.h"
 #include "eponsim_prop.h"
 
-/* Simulation End Event */
+/* Declare all of the event objects */
 EVENT SIM_END_EVENT;
-/* Service Olt Event */
 EVENT SERVICE_OLT;
+EVENT PACKET_ARRIVED[MAX_ONU];
+EVENT ONU_HAS_NO_QUEUED_PACKETS[MAX_ONU];
 
 /* simulation parameters data structure */
 sSIM_PARAMS simParams;
@@ -389,13 +390,13 @@ void init_data_structures()
   terminateSim = 0;
   schedPoolCount = 0;
   reset_throughput_flag = 0;
-  oltAttrs.packetsHead = NULL;
-  oltAttrs.packetsTail = NULL;
   oltAttrs.packetQueueSize  = 0;
   oltAttrs.packetQueueNum = 0;
   oltAttrs.transmitByteCnt  = 0;
   for(i=0; i < simParams.NUM_ONU; i++)
   {
+    oltAttrs.packetsHead[i] = NULL;
+    oltAttrs.packetsTail[i] = NULL;
     onuAttrs[i].latency   = 0;
     onuAttrs[i].transmitByteCnt = 0;
     onuAttrs[i].state = ONU_ST_ACTIVE;
@@ -758,6 +759,7 @@ void sim()
   }
   
   char tempStr[100];
+  char tempStr_2[100];
   long rand_seed;
     
   /* initialize the simulation */
@@ -894,11 +896,17 @@ void sim()
   
   /* Initialize the Olt Service Event */
   SERVICE_OLT = event("OLT Needs to be Serviced");
-    
+
   /* Spawn Traffic generator(s) for ONU */
   /* Start the ONU processes */
   for(i=0; i < simParams.NUM_ONU; i++)
   {
+    // Initalize the Packet Arrived Event for Each ONU
+    sprintf(tempStr_2, "A Packet Arrived for ONU #%d", i);
+    PACKET_ARRIVED[i] = event(tempStr_2);
+    sprintf(tempStr_2, "ONU #%d Has No Queued Packets", i);
+    ONU_HAS_NO_QUEUED_PACKETS[i] = event(tempStr_2);
+
     switch(simParams.TRAFFIC_TYPE)
     {
       case TRAFFIC_POISSON:
@@ -1007,8 +1015,18 @@ void read_sim_cfg_file()
   simParams.START_LOAD    = 0.1;
   simParams.END_LOAD    = 0.9;
   simParams.LOAD_INCR   = 0.1;
-  simParams.OLT_FRAME_TIME = 0.0125;
 
+  /* Set the values for the Cyclic Sleep Mechanism */
+  simParams.ACTIVE_POWER_CONSUMPTION = 6.5;
+  simParams.IDLE_POWER_CONSUMPTION   = 4.1;
+  simParams.SLEEP_POWER_CONSUMPTION  = 2.5;
+  simParams.PROBE_POWER_CONSUMPTION  = 3.5;
+
+  simParams.ONU_TIME_SLEEP   = 0.005;
+  simParams.ONU_TIME_TRIGGER = 0.0001;
+  simParams.ONU_TIME_WAKEUP  = 0.001;
+  simParams.ONU_TIME_PROBE   = 0.00025;
+  
   /* Generate Random Number Seed */
   simParams.RAND_SEED = 200100;
 
@@ -1100,12 +1118,6 @@ void read_sim_cfg_file()
         fscanf(cfgFile, "%s", currToken);
         simParams.END_LOAD = atof(currToken);
         //printf("END_LOAD = %e\n", simParams.END_LOAD);
-      }
-      else if(strcmp(currToken, "OLT_FRAME_TIME") == 0)
-      {
-        fscanf(cfgFile, "%s", currToken);
-        simParams.OLT_FRAME_TIME = atof(currToken);
-        //printf("OLT_FRAME_TIME = %e\n", simParams.OLT_FRAME_TIME);
       }
       else if(strcmp(currToken, "LOAD_INCR") == 0)
       {

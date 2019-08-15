@@ -24,23 +24,23 @@ double stream_pareto_epon(STREAM randomStream, double shapeParam, double locatio
 }
 
 /* Packet assignment function */
-void assign_packet(sENTITY_PKT *pkt)
+void assign_packet(sENTITY_PKT *pkt, int onuNum)
 {
   if(pkt != NULL)
   {
     pkt->creationTime = simtime();
-    if(oltAttrs.packetsHead == NULL)
+    if(oltAttrs.packetsHead[onuNum] == NULL)
     {
       /* this is the only packet */
-      oltAttrs.packetsHead = pkt;
-      oltAttrs.packetsTail = pkt;
+      oltAttrs.packetsHead[onuNum] = pkt;
+      oltAttrs.packetsTail[onuNum] = pkt;
     }
     else
     {
       /* Go to the end of the packet list for this ONU */
-      oltAttrs.packetsTail->next = pkt;
+      oltAttrs.packetsTail[onuNum]->next = pkt;
       pkt->next = NULL;
-      oltAttrs.packetsTail = pkt;
+      oltAttrs.packetsTail[onuNum] = pkt;
     }
     /* Add this packet's size to the queue size */
     oltAttrs.packetQueueSize += pkt->size;
@@ -70,7 +70,7 @@ void traffic_src_poisson(int onuNum)
     hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
     pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
     pktPtr = create_a_packet(pktSize, onuNum);
-    assign_packet(pktPtr);
+    assign_packet(pktPtr, onuNum);
     
     // Tell the OLT that a packet has arrived
     set(SERVICE_OLT);
@@ -181,7 +181,7 @@ void traffic_agg_self_similar(int onuNum)
     receive(oltAttrs.pktMailbox, (long *) &pktPtr);
 
     /* Place in Queue for ONU */
-    assign_packet(pktPtr);
+    assign_packet(pktPtr, onuNum);
 
     // Tell the OLT that a packet has arrived
     set(SERVICE_OLT);

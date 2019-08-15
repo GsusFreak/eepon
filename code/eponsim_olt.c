@@ -12,10 +12,12 @@ FILE *maxFile;
 void check_data_packet_list() {
   sENTITY_PKT *pktPtr;
   int length = 0;
-  pktPtr = oltAttrs.packetsHead;
-  while (pktPtr != NULL) {
-    pktPtr = pktPtr->next;
-    length++;
+  for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++) {
+    pktPtr = oltAttrs.packetsHead[iaa];
+    while (pktPtr != NULL) {
+      pktPtr = pktPtr->next;
+      length++;
+    }
   }
   if (length > DATA_QUEUE_MAX_LENGTH) {
     fatalErrorCode = FATAL_CAUSE_LENGTH_DATA_BUFFER_OVR;
@@ -30,16 +32,22 @@ void calc_avg_arrival(double *avgVal)
 {
   sENTITY_PKT *tmp;
   double  arrivalSum;
+  arrivalSum = 0;
 
-  if(oltAttrs.packetsHead != NULL)
+  for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
   {
-    tmp = oltAttrs.packetsHead;
-    arrivalSum = 0;
-    while(tmp != NULL)
+    if(oltAttrs.packetsHead[iaa] != NULL)
     {
-      arrivalSum += tmp->creationTime;
-      tmp = tmp->next;
+      tmp = oltAttrs.packetsHead[iaa];
+      while(tmp != NULL)
+      {
+        arrivalSum += tmp->creationTime;
+        tmp = tmp->next;
+      }
     }
+  }
+  if(arrivalSum != 0)
+  {
     *avgVal = arrivalSum/(double)oltAttrs.packetQueueNum;
   }
   else
@@ -68,8 +76,7 @@ void olt()
   while(!terminateSim) /* permanent behavior of the new OLT process moel */
   {
     /* Reset the loop variables */
-    txPktCount = 0;
-    transmitPkt = 1;
+    txPktCount  = 0;
       
     // Service the OLT packet queue
        
@@ -81,49 +88,58 @@ void olt()
       transmitPkt = 0;
     }
     
-    while(transmitPkt)
+    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
-      if(oltAttrs.packetsHead == NULL)
+      transmitPkt = 1;
+      while(transmitPkt)
       {
-        // If there are no packets, simply wait until the next OLT frame 
-        transmitPkt = 0;
-        wait(SERVICE_OLT);
+        if(oltAttrs.packetsHead[iaa] == NULL)
+        {
+          transmitPkt = 0;
+        }
+        else
+        {
+          if(oltAttrs.packetsHead[iaa]->onuNum == iaa)
+          {
+            /* Copy packet to temporary data structure */
+            currPkt.creationTime = oltAttrs.packetsHead[iaa]->creationTime;
+            currPkt.transmissionTime = oltAttrs.packetsHead[iaa]->transmissionTime;
+            currPkt.arrivalTime = oltAttrs.packetsHead[iaa]->arrivalTime;
+            currPkt.size = oltAttrs.packetsHead[iaa]->size;
+            currPkt.onuNum = oltAttrs.packetsHead[iaa]->onuNum;
+            
+            packet_transmission_time = (currPkt.size)*simParams.TIME_PER_BYTE;
+            
+            /* collect statistics on this packet */
+            record_stats_queue_length(currPkt.onuNum);
+            record_packet_stats_dequeue(currPkt.onuNum);
+            
+            /* remove packet */
+            remove_packet(currPkt.onuNum);    
+            
+            /* Have the OLT process wait while it sends the packet */
+            hold(packet_transmission_time);
+      
+            /* Increment transmitted packet counter */
+            txPktCount++;
+      
+            /* Incremement throughput statistics per ONU */
+            oltAttrs.transmitByteCnt += currPkt.size;
+            
+            /* Collect statistics on this packet */
+            record_packet_stats_finish(&currPkt);
+          }
+        }
       }
-      else
-      {
-        /* Copy packet to temporary data structure */
-        currPkt.creationTime = oltAttrs.packetsHead->creationTime;
-        currPkt.transmissionTime = oltAttrs.packetsHead->transmissionTime;
-        currPkt.arrivalTime = oltAttrs.packetsHead->arrivalTime;
-        currPkt.size = oltAttrs.packetsHead->size;
-        
-        packet_transmission_time = (currPkt.size)*simParams.TIME_PER_BYTE;
-        
-        /* collect statistics on this packet */
-        record_stats_queue_length(currPkt.onuNum);
-        record_packet_stats_dequeue(currPkt.onuNum);
-        
-        /* remove packet */
-        remove_packet();    
-        
-        hold(packet_transmission_time);
-    
-        /* Increment transmitted packet counter */
-        txPktCount++;
-    
-        /* Incremement throughput statistics per ONU*/
-        oltAttrs.transmitByteCnt += currPkt.size;
-        
-        /* Collect statistics on this packet */
-        record_packet_stats_finish(&currPkt);
-
-        ///* Make sure that any SERVICE_OLT events that happened while
-        // * serviceing the queue don't immediately trigger the OLT
-        // * again.
-        // */
-        clear(SERVICE_OLT);
-      }
+      set(ONU_HAS_NO_QUEUED_PACKETS[iaa]);
     }
+    /* Make sure that any SERVICE_OLT events that happened while
+     * serviceing the queue don't immediately trigger the OLT
+     * again. */
+    clear(SERVICE_OLT);
+
+    /* Wait for the next packet to come in */
+    wait(SERVICE_OLT);
   }
 }
 

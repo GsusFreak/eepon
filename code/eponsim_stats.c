@@ -24,26 +24,26 @@ void record_packet_stats_finish(sENTITY_PKT *pkt)
 /* Record stats after packet is dequeued */
 void record_packet_stats_dequeue(int onuNum)
 {
-  oltAttrs.packetsHead->transmissionTime = simtime();
+  oltAttrs.packetsHead[onuNum]->transmissionTime = simtime();
   /* Record packet queue time in proper table */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, oltAttrs.queueTimeTable);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, oltAttrs.queueTimeTable);
   /* Record packet queue time in overall queueing delay table */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, overallQueueDelay);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, overallQueueDelay);
   if(onuNum < simParams.NUM_HEAVY_ONU)
   {
     /* Record packet queue time in Heavy ONU queueing delay table */
-    record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, heavyQueueDelay);
+    record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, heavyQueueDelay);
   }
   else
   {
     /* Record packet queue time in Heavy ONU queueing delay table */
-    record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, lightQueueDelay);
+    record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, lightQueueDelay);
   }
   if((simParams.TRAFFIC_TYPE == TRAFFIC_SELF_SIMILAR) && (simInitPhase == 0))
   {
     /* Record confidence interval data for Self-similar traffic */
-    if(((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) < overallQueueDelayStat.intervalLower)
-       || ((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) > overallQueueDelayStat.intervalUpper))
+    if(((oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime) < overallQueueDelayStat.intervalLower)
+       || ((oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime) > overallQueueDelayStat.intervalUpper))
     {
       overallQueueDelayStat.outsideIntervalCount++;
       if(onuNum < simParams.NUM_HEAVY_ONU)
@@ -91,28 +91,28 @@ void record_stats_queue_length(int onuNum)
 /* Record stats after packet is dequeued */
 void record_packet_stats_dequeue_tx_time(int onuNum)
 {
-  oltAttrs.packetsHead->transmissionTime = simtime() + oltAttrs.packetsHead->size*simParams.TIME_PER_BYTE; 
+  oltAttrs.packetsHead[onuNum]->transmissionTime = simtime() + oltAttrs.packetsHead[onuNum]->size*simParams.TIME_PER_BYTE; 
   /* Record packet queue time in proper table */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, oltAttrs.queueTimeTable);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, oltAttrs.queueTimeTable);
   /* Record packet queue time in delay table for cycle based observation */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, cycleQueueDelay);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, cycleQueueDelay);
   /* Record packet queue time in overall queueing delay table */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, overallQueueDelay);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, overallQueueDelay);
   if(onuNum < simParams.NUM_HEAVY_ONU)
   {
     /* Record packet queue time in Heavy ONU queueing delay table */
-    record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, heavyQueueDelay);
+    record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, heavyQueueDelay);
   }
   else
   {
     /* Record packet queue time in Light ONU queueing delay table */
-    record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, lightQueueDelay);
+    record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, lightQueueDelay);
   }
   if((simParams.TRAFFIC_TYPE == TRAFFIC_SELF_SIMILAR) && (simInitPhase == 0))
   {
     /* Record confidence interval data for Self-similar traffic */
-    if(((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) < overallQueueDelayStat.intervalLower)
-       || ((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) > overallQueueDelayStat.intervalUpper))
+    if(((oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime) < overallQueueDelayStat.intervalLower)
+       || ((oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime) > overallQueueDelayStat.intervalUpper))
     {
       overallQueueDelayStat.outsideIntervalCount++;
       if(onuNum < simParams.NUM_HEAVY_ONU)
@@ -143,25 +143,25 @@ void record_packet_stats_dequeue_tx_time(int onuNum)
 /* Record stats after packet is dequeued */
 void record_packet_stats_dequeue_minus_prop(int onuNum)
 {
-  oltAttrs.packetsHead->transmissionTime = simtime() - onuAttrs[onuNum].latency;
+  oltAttrs.packetsHead[onuNum]->transmissionTime = simtime() - onuAttrs[onuNum].latency;
   /* Record packet queue time in proper table */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, oltAttrs.queueTimeTable);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, oltAttrs.queueTimeTable);
   /* Record packet queue time in overall queueing delay table */
-  record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, overallQueueDelay);
+  record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, overallQueueDelay);
   if(onuNum < simParams.NUM_HEAVY_ONU)
   {
     /* Record packet queue time in Heavy ONU queueing delay table */
-    record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, heavyQueueDelay);
+    record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, heavyQueueDelay);
   }
   else
   {
     /* Record packet queue time in Heavy ONU queueing delay table */
-    record(oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime, lightQueueDelay);
+    record(oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime, lightQueueDelay);
   }
   if((simParams.TRAFFIC_TYPE == TRAFFIC_SELF_SIMILAR) && (simInitPhase == 0))
   {
     /* Record confidence interval data for Self-similar traffic */
-    if(((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) < overallQueueDelayStat.intervalLower) || ((oltAttrs.packetsHead->transmissionTime - oltAttrs.packetsHead->creationTime) > overallQueueDelayStat.intervalUpper))
+    if(((oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime) < overallQueueDelayStat.intervalLower) || ((oltAttrs.packetsHead[onuNum]->transmissionTime - oltAttrs.packetsHead[onuNum]->creationTime) > overallQueueDelayStat.intervalUpper))
     {
       overallQueueDelayStat.outsideIntervalCount++;
       if(onuNum < simParams.NUM_HEAVY_ONU)
