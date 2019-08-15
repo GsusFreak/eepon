@@ -19,7 +19,7 @@
 /* Simulation End Event */
 EVENT SIM_END_EVENT;
 /* Service Olt Event */
-//EVENT SERVICE_OLT;
+EVENT SERVICE_OLT;
 
 /* simulation parameters data structure */
 sSIM_PARAMS simParams;
@@ -70,7 +70,7 @@ double    simTimeTrace[MAX_TRACE_VALUES];
 
 /* Parameters for self-similar traffic. */
 
-int i, j;     /* global loop variables */
+int  i, j;     /* global loop variables */
 char procId[20];
 
 /* count of fatal errors in the simulation */
@@ -90,7 +90,7 @@ char dump_msg_buf[1000];
 
 double currScheduleTime[20];
 double currScheduleTimeMax;
-double clockTime1,clockTime2;
+double clockTime1, clockTime2;
 
 /*
  * Grant Trace Data Structures
@@ -102,14 +102,11 @@ int grantTracePtr[MAX_LAMBDAS];
 sONU_LIST *scheduleList[MAX_LAMBDAS];
 sONU_LIST *scheduleListLfjSpt[MAX_LAMBDAS];
 sONU_LIST *scheduleListLfjLpt[MAX_LAMBDAS];
-#ifdef DEBUG_TRC_LO
-sONU_LIST *trcList[MAX_LAMBDAS];
-#endif
 
 // Declare eponsim.c Troubleshooting Variables
-int   numRuns = 1,
+int   numRuns       = 1,
       numLoadLevels = 9,
-      numONUs = 32;
+      numONUs       = 32;
 // FILE *traceFileDave;
 
 int TSprint(const char *text, ...)
@@ -118,7 +115,7 @@ int TSprint(const char *text, ...)
   va_list args;
   int out;
   
-  TSstream = fopen("A_TS_Out", "a");
+  TSstream = fopen("B_TS_Out", "a");
   va_start(args, text);
   out = vfprintf(TSstream, text, args);
   va_end(args);
@@ -254,12 +251,7 @@ void test_var_init()
   }
   
   test_vars.loadOrderCounter = 0;
-  // traceFileDave = fopen("A_trace_file", "w");
-  // set_trace_file(traceFileDave);
-  // trace_on();
-  
 #endif
-
   return;
 }
 
@@ -291,9 +283,6 @@ void status_processes_print() {
 }
 
 void open_TS_pointers() {
-//#ifdef EnableTroubleshooting_v2
-  //TSstream = fopen("A_TS_Out", "a");
-//#endif
 #ifdef EnableTroubleshooting_v4
   char  ONU_file_name[20];
   int   ONUid;
@@ -904,7 +893,7 @@ void sim()
   SIM_END_EVENT = event("Sim End");
   
   /* Initialize the Olt Service Event */
-  //SERVICE_OLT = event("OLT Needs to be Serviced");
+  SERVICE_OLT = event("OLT Needs to be Serviced");
     
   /* Spawn Traffic generator(s) for ONU */
   /* Start the ONU processes */
