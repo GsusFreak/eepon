@@ -127,6 +127,18 @@ void bsort_double_descend(double numbers[], int array_size)
   }
 }
 
+void grantCycle()
+{
+  create("Grant Cycle");
+  while(!terminateSim)
+  {
+    simParams.ONU_GRANTED += 1;
+    if(simParams.ONU_GRANTED == simParams.NUM_ONU)
+      simParams.ONU_GRANTED = 0;
+    hold(simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU);   
+  }
+}
+
 void changeState(int onuNum, eONU_STATE stateNew)
 {
   onuAttrs[onuNum].timeInState[stateNew] += simtime() - onuAttrs[onuNum].timeStateStarted;

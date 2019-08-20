@@ -4,64 +4,64 @@
 #include "eponsim_util.h"
 #include "eponsim_stats.h"
 
-/* Simulation End Event */
-EVENT SIM_END_EVENT;
+  /* Simulation End Event */
+  EVENT SIM_END_EVENT;
 
-FILE *maxFile;
+  FILE *maxFile;
 
-void check_data_packet_list() {
-  sENTITY_PKT *pktPtr;
-  int length = 0;
-  for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++) {
-    pktPtr = oltAttrs.packetsHead[iaa];
-    while (pktPtr != NULL) {
-      pktPtr = pktPtr->next;
-      length++;
-    }
-  }
-  if (length > DATA_QUEUE_MAX_LENGTH) {
-    fatalErrorCode = FATAL_CAUSE_LENGTH_DATA_BUFFER_OVR;
-    dump_sim_core();
-  }
-  return;
-}
-
-
-/* Calculate packet arrival time statistics */
-void calc_avg_arrival(double *avgVal)
-{
-  sENTITY_PKT *tmp;
-  double  arrivalSum;
-  arrivalSum = 0;
-
-  for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
-  {
-    if(oltAttrs.packetsHead[iaa] != NULL)
-    {
-      tmp = oltAttrs.packetsHead[iaa];
-      while(tmp != NULL)
-      {
-        arrivalSum += tmp->creationTime;
-        tmp = tmp->next;
+  void check_data_packet_list() {
+    sENTITY_PKT *pktPtr;
+    int length = 0;
+    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++) {
+      pktPtr = oltAttrs.packetsHead[iaa];
+      while (pktPtr != NULL) {
+        pktPtr = pktPtr->next;
+        length++;
       }
     }
+    if (length > DATA_QUEUE_MAX_LENGTH) {
+      fatalErrorCode = FATAL_CAUSE_LENGTH_DATA_BUFFER_OVR;
+      dump_sim_core();
+    }
+    return;
   }
-  if(arrivalSum != 0)
-  {
-    *avgVal = arrivalSum/(double)oltAttrs.packetQueueNum;
-  }
-  else
-  {
-    *avgVal = 0;
-  }
-}
 
 
-void olt()
-{
-  int transmitPkt;
-  long txPktCount = 0;
-  double packet_transmission_time;
+  /* Calculate packet arrival time statistics */
+  void calc_avg_arrival(double *avgVal)
+  {
+    sENTITY_PKT *tmp;
+    double  arrivalSum;
+    arrivalSum = 0;
+
+    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+    {
+      if(oltAttrs.packetsHead[iaa] != NULL)
+      {
+        tmp = oltAttrs.packetsHead[iaa];
+        while(tmp != NULL)
+        {
+          arrivalSum += tmp->creationTime;
+          tmp = tmp->next;
+        }
+      }
+    }
+    if(arrivalSum != 0)
+    {
+      *avgVal = arrivalSum/(double)oltAttrs.packetQueueNum;
+    }
+    else
+    {
+      *avgVal = 0;
+    }
+  }
+
+
+  void olt()
+  {
+    int transmitPkt;
+    long txPktCount = 0;
+    double packet_transmission_time;
   sENTITY_PKT currPkt;
 
   /* Initialize the process */

@@ -58,6 +58,7 @@ sSTAT_EST overallQueueLengthEst;
 sSTAT_EST heavyQueueLengthEst;
 sSTAT_EST lightQueueLengthEst;
 
+//Welsey
 sSS_STAT  overallQueueDelayStat;
 sSS_STAT  heavyQueueDelayStat;
 sSS_STAT  lightQueueDelayStat;
@@ -928,6 +929,9 @@ void sim()
 
   /* spawn the OLT process */
   olt(); 
+ 
+  /* spawn the process which keeps track of upstream grant permission */ 
+  grantCycle();
   
   for(i=0; i < simParams.NUM_ONU; i++)
   {
@@ -1003,7 +1007,7 @@ void read_sim_cfg_file()
   simParams.TUNING_TIME   = 5e-3;
   simParams.SIM_TIME    = 300;
   simParams.NUM_RUNS    = 1;
-  simParams.NUM_ONU   = 10;     /* Number of ONUs on PON */
+  simParams.NUM_ONU   = 32;     /* Number of ONUs on PON */
   simParams.NUM_HEAVY_ONU   = 5;      /* Number of heavily loaded ONUs */
   simParams.LINK_SPEED    = 10e9;      /* link speed in bps */
   
@@ -1027,6 +1031,9 @@ void read_sim_cfg_file()
   simParams.ONU_TIME_WAKEUP  = 0.001;
   simParams.ONU_TIME_PROBE   = 0.00025;
   
+  simParams.ONU_GRANTED      = 0; 
+  simParams.TIME_PER_GRANT   = simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU;
+
   /* Generate Random Number Seed */
   simParams.RAND_SEED = 200100;
 
@@ -1197,6 +1204,10 @@ void read_sim_cfg_file()
     }
     //printf("Sim configuration loaded\n");
   }
+  
+  // Update the TIME_PER_GRANT variable with the new value of 
+  // NUM_ONU.  
+  simParams.TIME_PER_GRANT   = simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU;
   
   // Test Variables read_sim_cfg_file_finish
   test_vars.read_sim_cfg_file_finish++;

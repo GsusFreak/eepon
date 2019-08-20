@@ -241,6 +241,9 @@ typedef struct
   double    ONU_TIME_WAKEUP;
   double    ONU_TIME_PROBE;
 
+  int       ONU_GRANTED;
+  double    TIME_PER_GRANT;
+
   int     NUM_PARTS;    /* Number of bandwidth partitions */
   double  LINK_SPEED_PER_PART;  /* in bps */
   double  AVG_PKT_INTER_ARVL_TIME;

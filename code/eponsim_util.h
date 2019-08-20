@@ -32,6 +32,7 @@ void remove_packet(int onuNum);
 void remove_all_packets();
 
 
+void grantCycle();
 /* ONU list utility functions */
 sONU_LIST *onu_list_insert(eSORT_METHOD sortMethod1, eSORT_METHOD sortMethod2, eSORT_CRITERIA sortCriteria1, 
 	eSORT_CRITERIA sortCriteria2, sONU_LIST *newEntry, sONU_LIST *currentList);
