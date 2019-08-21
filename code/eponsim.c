@@ -58,7 +58,6 @@ sSTAT_EST overallQueueLengthEst;
 sSTAT_EST heavyQueueLengthEst;
 sSTAT_EST lightQueueLengthEst;
 
-//Welsey
 sSS_STAT  overallQueueDelayStat;
 sSS_STAT  heavyQueueDelayStat;
 sSS_STAT  lightQueueDelayStat;
@@ -736,10 +735,12 @@ void sim_ctrl()
     //    hold(60);
     //  }
     //}
+    
+    
     while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e5))
-    {
       hold(1);
-    }
+    //while(simtime() < simParams.SIM_TIME)
+    //  hold(1);
   }
 
   /* Simulation is completed, set SIM_END global event */
@@ -1004,21 +1005,21 @@ void read_sim_cfg_file()
     
   /* set defaults */
   simParams.TRAFFIC_TYPE    = TRAFFIC_POISSON;  /* Traffic Type */
-  simParams.TUNING_TIME   = 5e-3;
-  simParams.SIM_TIME    = 300;
-  simParams.NUM_RUNS    = 1;
-  simParams.NUM_ONU   = 32;     /* Number of ONUs on PON */
+  simParams.TUNING_TIME     = 5e-3;
+  simParams.SIM_TIME        = 300;
+  simParams.NUM_RUNS        = 1;
+  simParams.NUM_ONU         = 32;     /* Number of ONUs on PON */
   simParams.NUM_HEAVY_ONU   = 5;      /* Number of heavily loaded ONUs */
-  simParams.LINK_SPEED    = 10e9;      /* link speed in bps */
+  simParams.LINK_SPEED      = 10e9;   /* link speed in bps */
   
-  simParams.HEAVY_LOAD   = 2;      /* heavy load multiple */
+  simParams.HEAVY_LOAD      = 2;      /* heavy load multiple */
   
-  simParams.SS_HURST_PARAM  = 0.75;     /* Self Similar Traffic Source Hurst Parameter */
+  simParams.SS_HURST_PARAM  = 0.75;   /* Self Similar Traffic Source Hurst Parameter */
   simParams.NUM_SS_STREAMS  = 32;     /* Number of Self Similar Traffic Streams */
   
-  simParams.START_LOAD    = 0.1;
-  simParams.END_LOAD    = 0.9;
-  simParams.LOAD_INCR   = 0.1;
+  simParams.START_LOAD      = 0.1;
+  simParams.END_LOAD        = 0.9;
+  simParams.LOAD_INCR       = 0.1;
 
   /* Set the values for the Cyclic Sleep Mechanism */
   simParams.ACTIVE_POWER_CONSUMPTION = 6.5;
@@ -1033,7 +1034,7 @@ void read_sim_cfg_file()
   
   simParams.ONU_GRANTED      = 0; 
   simParams.TIME_PER_GRANT   = simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU;
-
+  simParams.simType          = PILOT_RUN;
   /* Generate Random Number Seed */
   simParams.RAND_SEED = 200100;
 
@@ -1077,6 +1078,51 @@ void read_sim_cfg_file()
         {
           simParams.TRAFFIC_TYPE = TRAFFIC_POISSON;
         }
+      }
+      else if(strcmp(currToken, "ONU_TIME_SLEEP") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.ONU_TIME_SLEEP = atof(currToken);
+      }
+      else if(strcmp(currToken, "ONU_TIME_TRIGGER") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.ONU_TIME_TRIGGER = atof(currToken);
+      }
+      else if(strcmp(currToken, "ONU_TIME_WAKEUP") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.ONU_TIME_WAKEUP = atof(currToken);
+      }
+      else if(strcmp(currToken, "ONU_TIME_PROBE") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.ONU_TIME_PROBE = atof(currToken);
+      }
+      else if(strcmp(currToken, "ONU_TIME_SLEEP") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.ONU_TIME_SLEEP = atof(currToken);
+      }
+      else if(strcmp(currToken, "ACTIVE_POWER_CONSUMPTION") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.ACTIVE_POWER_CONSUMPTION = atof(currToken);
+      }
+      else if(strcmp(currToken, "IDLE_POWER_CONSUMPTION") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.IDLE_POWER_CONSUMPTION = atof(currToken);
+      }
+      else if(strcmp(currToken, "SLEEP_POWER_CONSUMPTION") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.SLEEP_POWER_CONSUMPTION = atof(currToken);
+      }
+      else if(strcmp(currToken, "PROBE_POWER_CONSUMPTION") == 0)
+      {
+        fscanf(cfgFile, "%s", currToken);
+        simParams.PROBE_POWER_CONSUMPTION = atof(currToken);
       }
       else if(strcmp(currToken, "SIM_TIME") == 0)
       {
@@ -1266,6 +1312,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *cr1File, *cr2File, *mcrFile;
   FILE *odHistFile, *gspHistFile;
   FILE *pdFile, *plFile, *clpFile;
+  FILE *pcFile, *tpcFile;
 
   /* Determine file names */
   filename_suffix[0] = '\0';
@@ -1457,12 +1504,48 @@ void write_sim_data(int runNumber, double trafficLoad)
   sprintf(filename_str, "mcr_%s", filename_suffix);
   mcrFile = fopen(filename_str,"a");
   
-  fprintf(statsFile,"rand_seed_base=%ld\n", simParams.RAND_SEED);
+  // Open files to record the ONU State power consumption
+  // data
+  filename_str[0] = '\0';
+  sprintf(filename_str, "pc.txt");
+  pcFile = fopen(filename_str,"a");
+  filename_str[0] = '\0';
+  sprintf(filename_str, "tpc.txt");
+  tpcFile = fopen(filename_str,"a");
   
+  
+  fprintf(statsFile,"rand_seed_base=%ld\n", simParams.RAND_SEED);
   fprintf(statsFile,"sim_time=%e\n", simtime());
   fprintf(statsFile,"cpu_time=%e\n", cputime());
   fprintf(statsFile,"sim_time/cpu_time=%e\n", simtime()/cputime());
 
+  if(simParams.simType == ACTUAL_RUN) 
+  {
+    double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0;
+    double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrAvg = 0;
+    double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0;
+    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+    {
+      // Please see the emun eONU_STATE in eponsim.h to find the
+      // appropriate position of each state in timeInState.
+      timeActive += onuAttrs[iaa].timeInState[1];
+      timeIdle += onuAttrs[iaa].timeInState[2];
+      timeSleep += onuAttrs[iaa].timeInState[3];
+      timeProbe += onuAttrs[iaa].timeInState[4];
+    }
+    pctActive = timeActive/(timeActive + timeIdle + timeSleep + timeProbe);
+    pctIdle = timeIdle/(timeActive + timeIdle + timeSleep + timeProbe);
+    pctSleep = timeSleep/(timeActive + timeIdle + timeSleep + timeProbe);
+    pctProbe = timeProbe/(timeActive + timeIdle + timeSleep + timeProbe);
+    pwrActive = timeActive*simParams.ACTIVE_POWER_CONSUMPTION;
+    pwrIdle =  timeIdle*simParams.IDLE_POWER_CONSUMPTION;
+    pwrSleep = timeSleep*simParams.SLEEP_POWER_CONSUMPTION;
+    pwrProbe = timeProbe*simParams.PROBE_POWER_CONSUMPTION;
+    pwrAvg = pwrActive + pwrIdle + pwrSleep + pwrProbe;
+    //fprintf(tpcFile, "%f %e %e %e %e\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe);
+    fprintf(tpcFile, "%f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe);
+    fprintf(pcFile, "%f %e %e %e %e %e\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe);
+  }
   if((simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) /*&& (simParams.OLT_TYPE != OLT_APS)*/)
   {
     /* Collect stats in files */
@@ -1591,6 +1674,8 @@ void write_sim_data(int runNumber, double trafficLoad)
   fclose(cr1File);
   fclose(cr2File);
   fclose(mcrFile);
+  fclose(pcFile);
+  fclose(tpcFile);
 }
 
 void write_sim_hist_tail_data(double trafficLoad)
@@ -1666,6 +1751,7 @@ int main()
     
       /* Do a pilot run of the simulation to estimate statistics */
       simType = PILOT_RUN;
+      simParams.simType = PILOT_RUN;
     
       TSprint("Pilot Run\n");
     
@@ -1694,7 +1780,13 @@ int main()
     
       /* Run the actual simulation */
       simType = ACTUAL_RUN;
-      
+      simParams.simType = ACTUAL_RUN;
+
+      // Reset the timers in the onuAttrs.stateTimes
+      for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+        for(int ibb = 0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
+          onuAttrs[iaa].timeInState[ibb] = 0;
+
       // Test Variables sim_time_per_load_start
       test_vars.sim_time_per_load_start[test_vars.runNum][test_vars.loadOrderCounter] = simtime();
       test_var_print();
@@ -1724,28 +1816,6 @@ int main()
         continue;
       }
       
-      if(simParams.GET_TAIL == GET_TAIL_ON)
-      {
-        setup_hist_tail();
-        /* Setup the model for next run */
-        rerun();
-        sim_cleanup(); /* perform a memory clean up */
-    
-        /* Run the simulation again to get data on the tail of distributions */
-        simType = TAIL_RUN;
-        sim();
-    
-        /* if simulation completes produce output */
-        if(terminateSim == 0)
-        {
-          write_sim_hist_tail_data(trafficLoad);
-        }
-        else
-        {
-          terminateSim = 0;
-          fatalErrorCount = 0;
-        }
-      }
       /* Setup the model for next run */
       rerun();
       sim_cleanup(); /* perform a memory clean up */

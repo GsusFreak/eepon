@@ -203,6 +203,14 @@ double      maximumGrantCycle;
     } \
   } } while(0)
     
+typedef enum
+{
+  PILOT_RUN,
+  ACTUAL_RUN,
+  TAIL_RUN,
+  TIME_TRACE
+} eSIM_TYPE;
+
 /*
  * Type definitions
  */
@@ -232,6 +240,7 @@ typedef struct
   int       GET_TAIL;   /* Get tails for histogram (each simulation will run twice!!!) */
   double    OLT_FRAME_TIME;
   
+  eSIM_TYPE simType;
   double    ACTIVE_POWER_CONSUMPTION;
   double    IDLE_POWER_CONSUMPTION;
   double    SLEEP_POWER_CONSUMPTION;
@@ -354,13 +363,6 @@ typedef struct
   double  maxEst;
 } sSTAT_EST;
 
-typedef enum
-{
-  PILOT_RUN,
-  ACTUAL_RUN,
-  TAIL_RUN,
-  TIME_TRACE
-} eSIM_TYPE;
 
 eSIM_TYPE simType;
 

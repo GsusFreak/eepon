@@ -46,6 +46,10 @@ void assign_packet(sENTITY_PKT *pkt, int onuNum)
     oltAttrs.packetQueueSize += pkt->size;
     /* Add this packet to the queue packet count */
     oltAttrs.packetQueueNum++;
+
+    // Tell the ONU that a packet has arrived
+    set(PACKET_ARRIVED[onuNum]);
+    clear(ONU_HAS_NO_QUEUED_PACKETS[onuNum]);
   }
 }
 
