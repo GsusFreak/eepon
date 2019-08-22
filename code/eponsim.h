@@ -182,6 +182,8 @@ double      maximumGrantCycle;
 
 #define MAX_SCHEDULER_NUM_SLOT    1000
 
+#define BOBB 500
+
 /*
  * Some useful macros
  */
@@ -252,6 +254,7 @@ typedef struct
 
   int       ONU_GRANTED;
   double    TIME_PER_GRANT;
+  int       boolRecordStateTime;
 
   int     NUM_PARTS;    /* Number of bandwidth partitions */
   double  LINK_SPEED_PER_PART;  /* in bps */

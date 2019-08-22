@@ -141,7 +141,12 @@ void grantCycle()
 
 void changeState(int onuNum, eONU_STATE stateNew)
 {
-  onuAttrs[onuNum].timeInState[stateNew] += simtime() - onuAttrs[onuNum].timeStateStarted;
+  if(simParams.boolRecordStateTime == 1)
+  { 
+    onuAttrs[onuNum].timeInState[onuAttrs[onuNum].state] += simtime() - onuAttrs[onuNum].timeStateStarted;
+    //if(stateNew == 3 && table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+    //  TSprint("[%d] PROBE registered %f sec\n", onuNum, simtime() - onuAttrs[onuNum].timeStateStarted); 
+  }
   onuAttrs[onuNum].state = stateNew; 
   onuAttrs[onuNum].timeStateStarted = simtime();
 }

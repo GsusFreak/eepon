@@ -48,7 +48,12 @@ void assign_packet(sENTITY_PKT *pkt, int onuNum)
     oltAttrs.packetQueueNum++;
 
     // Tell the ONU that a packet has arrived
+    //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+    //  TSprint("[%d] PACKET_ARRIVED -> 1\n", onuNum); 
     set(PACKET_ARRIVED[onuNum]);
+
+    //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+    //  TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 0\n", onuNum); 
     clear(ONU_HAS_NO_QUEUED_PACKETS[onuNum]);
   }
 }
@@ -77,6 +82,8 @@ void traffic_src_poisson(int onuNum)
     assign_packet(pktPtr, onuNum);
     
     // Tell the OLT that a packet has arrived
+    //if(table_cnt(overallQueueDelay) < BOBB)
+    //  TSprint("SERVICE_OLT -> 1\n"); 
     set(SERVICE_OLT);
     
     // printf("[%10.5e] ---> Generating Packet with %d bytes for ONU #%d\n",simtime(),pktSize,onuNum);

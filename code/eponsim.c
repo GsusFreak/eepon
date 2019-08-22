@@ -393,13 +393,14 @@ void init_data_structures()
   oltAttrs.packetQueueSize  = 0;
   oltAttrs.packetQueueNum = 0;
   oltAttrs.transmitByteCnt  = 0;
+  TSprint("Setting all onuAttrs state to IDLE\n");
   for(i=0; i < simParams.NUM_ONU; i++)
   {
     oltAttrs.packetsHead[i] = NULL;
     oltAttrs.packetsTail[i] = NULL;
     onuAttrs[i].latency   = 0;
     onuAttrs[i].transmitByteCnt = 0;
-    onuAttrs[i].state = ONU_ST_ACTIVE;
+    onuAttrs[i].state = ONU_ST_IDLE;
     onuAttrs[i].timeStateStarted = 0;
     for(int ibb=0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
       onuAttrs[i].timeInState[ibb] = 0;
@@ -1035,6 +1036,7 @@ void read_sim_cfg_file()
   simParams.ONU_GRANTED      = 0; 
   simParams.TIME_PER_GRANT   = simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU;
   simParams.simType          = PILOT_RUN;
+  simParams.boolRecordStateTime = 0;
   /* Generate Random Number Seed */
   simParams.RAND_SEED = 200100;
 
@@ -1312,7 +1314,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *cr1File, *cr2File, *mcrFile;
   FILE *odHistFile, *gspHistFile;
   FILE *pdFile, *plFile, *clpFile;
-  FILE *pcFile, *tpcFile;
+  FILE *pcFile, *tpcFile, *ppcFile;
 
   /* Determine file names */
   filename_suffix[0] = '\0';
@@ -1334,6 +1336,8 @@ void write_sim_data(int runNumber, double trafficLoad)
   }
 
   sprintf(filename_suffix, "%s%do_", filename_suffix, simParams.NUM_ONU);
+  
+  sprintf(filename_suffix, "%s.txt", filename_suffix);
   
   /*
    * Open files
@@ -1512,6 +1516,9 @@ void write_sim_data(int runNumber, double trafficLoad)
   filename_str[0] = '\0';
   sprintf(filename_str, "tpc.txt");
   tpcFile = fopen(filename_str,"a");
+  filename_str[0] = '\0';
+  sprintf(filename_str, "ppc.txt");
+  ppcFile = fopen(filename_str,"a");
   
   
   fprintf(statsFile,"rand_seed_base=%ld\n", simParams.RAND_SEED);
@@ -1533,18 +1540,27 @@ void write_sim_data(int runNumber, double trafficLoad)
       timeSleep += onuAttrs[iaa].timeInState[3];
       timeProbe += onuAttrs[iaa].timeInState[4];
     }
-    pctActive = timeActive/(timeActive + timeIdle + timeSleep + timeProbe);
-    pctIdle = timeIdle/(timeActive + timeIdle + timeSleep + timeProbe);
-    pctSleep = timeSleep/(timeActive + timeIdle + timeSleep + timeProbe);
-    pctProbe = timeProbe/(timeActive + timeIdle + timeSleep + timeProbe);
+    timeActive /= simParams.NUM_ONU;
+    timeIdle /= simParams.NUM_ONU;
+    timeSleep /= simParams.NUM_ONU;
+    timeProbe /= simParams.NUM_ONU;
+    pctActive = timeActive/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
+    pctIdle = timeIdle/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
+    pctSleep = timeSleep/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
+    pctProbe = timeProbe/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
     pwrActive = timeActive*simParams.ACTIVE_POWER_CONSUMPTION;
     pwrIdle =  timeIdle*simParams.IDLE_POWER_CONSUMPTION;
     pwrSleep = timeSleep*simParams.SLEEP_POWER_CONSUMPTION;
     pwrProbe = timeProbe*simParams.PROBE_POWER_CONSUMPTION;
     pwrAvg = pwrActive + pwrIdle + pwrSleep + pwrProbe;
-    //fprintf(tpcFile, "%f %e %e %e %e\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe);
-    fprintf(tpcFile, "%f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe);
-    fprintf(pcFile, "%f %e %e %e %e %e\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe);
+    //fprintf(tpcFile, "%f %f %f %f %f\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe);
+    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+    {
+      fprintf(tpcFile, "%f ", onuAttrs[iaa].timeInState[4]);
+    }
+    fprintf(tpcFile, "\n");
+    fprintf(ppcFile, "%f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe);
+    fprintf(pcFile, "%f %f %f %f %f %f\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe);
   }
   if((simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) /*&& (simParams.OLT_TYPE != OLT_APS)*/)
   {
@@ -1676,6 +1692,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   fclose(mcrFile);
   fclose(pcFile);
   fclose(tpcFile);
+  fclose(ppcFile);
 }
 
 void write_sim_hist_tail_data(double trafficLoad)
@@ -1784,23 +1801,32 @@ int main()
 
       // Reset the timers in the onuAttrs.stateTimes
       for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+      {
         for(int ibb = 0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
           onuAttrs[iaa].timeInState[ibb] = 0;
+        onuAttrs[iaa].state = ONU_ST_IDLE;
+        onuAttrs[iaa].timeStateStarted = simtime();
+      }
 
       // Test Variables sim_time_per_load_start
       test_vars.sim_time_per_load_start[test_vars.runNum][test_vars.loadOrderCounter] = simtime();
       test_var_print();
-    
+
+      // Turn on the state time recording.
+      simParams.boolRecordStateTime = 1; 
+
       TSprint("Actual Run\n");
     
       sim();
-      TSprint("0\n"); 
       fflush(NULL);
      
       // Test Variables sim_time_per_load
       test_vars.sim_time_per_load[test_vars.runNum][test_vars.loadOrderCounter] = simtime() - test_vars.sim_time_per_load_start[test_vars.runNum][test_vars.loadOrderCounter];
       test_var_print();
 
+      // Turn on the state time recording.
+      simParams.boolRecordStateTime = 0; 
+      
       /* if simulation completes produce output */
       if(terminateSim == 0)
       {

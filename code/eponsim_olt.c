@@ -90,16 +90,16 @@ void olt()
     
     for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
-      transmitPkt = 1;
-      while(transmitPkt)
+      if(onuAttrs[iaa].state == ONU_ST_ACTIVE)
       {
-        if(oltAttrs.packetsHead[iaa] == NULL)
+        transmitPkt = 1;
+        while(transmitPkt)
         {
-          transmitPkt = 0;
-        }
-        else
-        {
-          if(oltAttrs.packetsHead[iaa]->onuNum == iaa)
+          if(oltAttrs.packetsHead[iaa] == NULL)
+          {
+            transmitPkt = 0;
+          }
+          else
           {
             /* Copy packet to temporary data structure */
             currPkt.creationTime = oltAttrs.packetsHead[iaa]->creationTime;
@@ -114,15 +114,15 @@ void olt()
             record_stats_queue_length(currPkt.onuNum);
             record_packet_stats_dequeue(currPkt.onuNum);
             
+            /* Have the OLT process wait while it sends the packet */
+            hold(packet_transmission_time);
+        
             /* remove packet */
             remove_packet(currPkt.onuNum);    
             
-            /* Have the OLT process wait while it sends the packet */
-            hold(packet_transmission_time);
-      
             /* Increment transmitted packet counter */
             txPktCount++;
-      
+        
             /* Incremement throughput statistics per ONU */
             oltAttrs.transmitByteCnt += currPkt.size;
             
@@ -130,13 +130,19 @@ void olt()
             record_packet_stats_finish(&currPkt);
           }
         }
+        if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
+          TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 1\n", iaa); 
+        set(ONU_HAS_NO_QUEUED_PACKETS[iaa]);
+        if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
+          TSprint("[%d] PACKET_ARRIVED -> 0\n", iaa); 
+        clear(PACKET_ARRIVED[iaa]);
       }
-      set(ONU_HAS_NO_QUEUED_PACKETS[iaa]);
-      clear(PACKET_ARRIVED[iaa]);
     }
     /* Make sure that any SERVICE_OLT events that happened while
      * serviceing the queue don't immediately trigger the OLT
      * again. */
+    //if(table_cnt(overallQueueDelay) < BOBB)
+    //  TSprint("SERVICE_OLT -> 0\n"); 
     clear(SERVICE_OLT);
 
     /* Wait for the next packet to come in */
