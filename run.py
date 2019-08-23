@@ -1,11 +1,14 @@
 import os
 import configparser
+import subprocess
 from shutil import copyfile
 
-upperBound = 350
-lowerBound = 250
-increment = 50
-paramList1 = [*range(lowerBound, upperBound+1, increment)]
+#upperBound = 350
+#lowerBound = 250
+#increment = 50
+#paramList1 = [*range(lowerBound, upperBound+1, increment)]
+paramList1 = [x * 0.001 for x in range(1,11)]
+livingProcesses = []
 
 def read_config():
     config = configparser.ConfigParser()
@@ -62,14 +65,12 @@ if genMultipleProfiles == 0:
             #print('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
              
             # Run the system command.
-            # It runs the eponsim file locaded in the code directory but moves the
-            # working directory to the folder which corresponds to its profile and
-            # run number. The "sh" command is used to detach the whole process from
-            # the main run.py thread and allows multiple instances of the simulator
-            # to run simultaneously. Dr. Haddad used "ssh" instead of "sh" which is
-            # more difficult to use.
-            os.system('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
+            #os.system('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
+            livingProcesses.append(subprocess.Popen([os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt'], cwd=newPath, shell=True))
             print("run "+runNum+"_"+fileName+" started")
+    for process in livingProcesses:
+        process.wait()
+    print('All of the processes have completed.')
 
 # If genMultipleProfiles is ON (== 1), edit the base profile to have a range 
 # of options automatically
@@ -96,8 +97,10 @@ if genMultipleProfiles == 1:
                 #print('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
                  
                 # Run the system command.
-                os.system('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
-    print("run "+runNum+" started {}:{}:{}".format(lowerBound,increment,upperBound))
+                livingProcesses.append(subprocess.Popen([os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt'], cwd=newPath, shell=True))
+    for process in livingProcesses:
+        process.wait()
+    print('All of the processes have completed.')
 
 # Rewrite the config file with the updated settings
 write_config(config)

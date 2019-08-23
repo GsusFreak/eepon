@@ -144,8 +144,9 @@ void changeState(int onuNum, eONU_STATE stateNew)
   if(simParams.boolRecordStateTime == 1)
   { 
     onuAttrs[onuNum].timeInState[onuAttrs[onuNum].state] += simtime() - onuAttrs[onuNum].timeStateStarted;
-    //if(stateNew == 3 && table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-    //  TSprint("[%d] PROBE registered %f sec\n", onuNum, simtime() - onuAttrs[onuNum].timeStateStarted); 
+    onuAttrs[onuNum].cntState[onuAttrs[onuNum].state]++; 
+    //if(onuNum == 0 && table_cnt(overallQueueDelay) < BOBB)
+    //  TSprint("[%d] %d state delay : %f sec\n", onuNum, onuAttrs[onuNum].state, simtime() - onuAttrs[onuNum].timeStateStarted); 
   }
   onuAttrs[onuNum].state = stateNew; 
   onuAttrs[onuNum].timeStateStarted = simtime();

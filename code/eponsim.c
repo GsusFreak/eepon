@@ -16,6 +16,8 @@
 #include "eponsim_olt.h"
 #include "eponsim_prop.h"
 
+
+
 /* Declare all of the event objects */
 EVENT SIM_END_EVENT;
 EVENT SERVICE_OLT;
@@ -401,7 +403,7 @@ void init_data_structures()
     onuAttrs[i].latency   = 0;
     onuAttrs[i].transmitByteCnt = 0;
     onuAttrs[i].state = ONU_ST_IDLE;
-    onuAttrs[i].timeStateStarted = 0;
+    onuAttrs[i].timeStateStarted = simtime();
     for(int ibb=0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
       onuAttrs[i].timeInState[ibb] = 0;
   }
@@ -737,11 +739,20 @@ void sim_ctrl()
     //  }
     //}
     
-    
-    while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e5))
-      hold(1);
-    //while(simtime() < simParams.SIM_TIME)
-    //  hold(1);
+    switch(simParams.endType)
+    {
+      case END_TYPE_TRAFFIC:
+        while(table_cnt(overallQueueDelay) < (simParams.SIM_TIME*1e5))
+          hold(1);
+        break;
+      case END_TYPE_TIME:
+        while(simtime() < simParams.SIM_TIME)
+          hold(1);
+        break;
+      default:
+        while(simtime() < simParams.SIM_TIME)
+          hold(1);
+    }
   }
 
   /* Simulation is completed, set SIM_END global event */
@@ -1037,6 +1048,10 @@ void read_sim_cfg_file()
   simParams.TIME_PER_GRANT   = simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU;
   simParams.simType          = PILOT_RUN;
   simParams.boolRecordStateTime = 0;
+  
+  // Set the simulation to end once a certain amount of traffic passes through it
+  simParams.endType          = END_TYPE_TRAFFIC;
+
   /* Generate Random Number Seed */
   simParams.RAND_SEED = 200100;
 
@@ -1199,6 +1214,19 @@ void read_sim_cfg_file()
           simParams.FIXED_PROP_DELAY = FIXED_PROP_DELAY_ON;
         }
       }
+      else if(strcmp(currToken, "END_TYPE") == 0)
+      {
+        currToken[0] = '\0';
+        fscanf(cfgFile, "%s", currToken);
+        if(strcmp(currToken, "END_TYPE_TRAFFIC") == 0)
+        {
+          simParams.endType = END_TYPE_TRAFFIC;
+        }
+        else if(strcmp(currToken, "END_TYPE_TIME") == 0)
+        {
+          simParams.endType = END_TYPE_TIME;
+        }
+      }
       else if(strcmp(currToken, "GET_TAIL") == 0)
       {
         currToken[0] = '\0';
@@ -1314,7 +1342,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *cr1File, *cr2File, *mcrFile;
   FILE *odHistFile, *gspHistFile;
   FILE *pdFile, *plFile, *clpFile;
-  FILE *pcFile, *tpcFile, *ppcFile;
+  FILE *pcFile, *tpcFile, *ppcFile, *cpcFile;
 
   /* Determine file names */
   filename_suffix[0] = '\0';
@@ -1519,7 +1547,9 @@ void write_sim_data(int runNumber, double trafficLoad)
   filename_str[0] = '\0';
   sprintf(filename_str, "ppc.txt");
   ppcFile = fopen(filename_str,"a");
-  
+  filename_str[0] = '\0';
+  sprintf(filename_str, "cpc.txt");
+  cpcFile = fopen(filename_str,"a");
   
   fprintf(statsFile,"rand_seed_base=%ld\n", simParams.RAND_SEED);
   fprintf(statsFile,"sim_time=%e\n", simtime());
@@ -1531,35 +1561,49 @@ void write_sim_data(int runNumber, double trafficLoad)
     double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0;
     double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrAvg = 0;
     double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0;
+    int    cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0;
     for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
       // Please see the emun eONU_STATE in eponsim.h to find the
       // appropriate position of each state in timeInState.
-      timeActive += onuAttrs[iaa].timeInState[1];
-      timeIdle += onuAttrs[iaa].timeInState[2];
-      timeSleep += onuAttrs[iaa].timeInState[3];
-      timeProbe += onuAttrs[iaa].timeInState[4];
+      timeActive += onuAttrs[iaa].timeInState[0];
+      timeIdle += onuAttrs[iaa].timeInState[1];
+      timeSleep += onuAttrs[iaa].timeInState[2];
+      timeProbe += onuAttrs[iaa].timeInState[3];
+
+      cntActive += onuAttrs[iaa].cntState[0]; 
+      cntIdle += onuAttrs[iaa].cntState[1]; 
+      cntProbe += onuAttrs[iaa].cntState[2]; 
+      cntSleep += onuAttrs[iaa].cntState[3]; 
     }
     timeActive /= simParams.NUM_ONU;
     timeIdle /= simParams.NUM_ONU;
     timeSleep /= simParams.NUM_ONU;
     timeProbe /= simParams.NUM_ONU;
+
+    cntActive /= simParams.NUM_ONU;
+    cntIdle /= simParams.NUM_ONU;
+    cntSleep /= simParams.NUM_ONU;
+    cntProbe /= simParams.NUM_ONU;
+
     pctActive = timeActive/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
     pctIdle = timeIdle/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
     pctSleep = timeSleep/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
     pctProbe = timeProbe/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
+
     pwrActive = timeActive*simParams.ACTIVE_POWER_CONSUMPTION;
     pwrIdle =  timeIdle*simParams.IDLE_POWER_CONSUMPTION;
     pwrSleep = timeSleep*simParams.SLEEP_POWER_CONSUMPTION;
     pwrProbe = timeProbe*simParams.PROBE_POWER_CONSUMPTION;
     pwrAvg = pwrActive + pwrIdle + pwrSleep + pwrProbe;
-    //fprintf(tpcFile, "%f %f %f %f %f\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe);
-    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
-    {
-      fprintf(tpcFile, "%f ", onuAttrs[iaa].timeInState[4]);
-    }
-    fprintf(tpcFile, "\n");
+    fprintf(tpcFile, "%f %f %f %f %f\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe);
+    //for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+    //{
+    //  fprintf(tpcFile, "%f ", onuAttrs[iaa].timeInState[4]);
+    //}
+    //fprintf(tpcFile, "\n");
     fprintf(ppcFile, "%f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe);
+    fprintf(cpcFile, "%f %d %d %d %d\n", trafficLoad, cntActive, cntIdle, cntSleep, cntProbe);
     fprintf(pcFile, "%f %f %f %f %f %f\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe);
   }
   if((simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) /*&& (simParams.OLT_TYPE != OLT_APS)*/)
@@ -1803,7 +1847,10 @@ int main()
       for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
       {
         for(int ibb = 0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
+        {
           onuAttrs[iaa].timeInState[ibb] = 0;
+          onuAttrs[iaa].cntState[ibb] = 0; 
+        }
         onuAttrs[iaa].state = ONU_ST_IDLE;
         onuAttrs[iaa].timeStateStarted = simtime();
       }

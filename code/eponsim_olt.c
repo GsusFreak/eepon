@@ -130,11 +130,11 @@ void olt()
             record_packet_stats_finish(&currPkt);
           }
         }
-        if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
-          TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 1\n", iaa); 
+        //if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
+        //  TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 1\n", iaa); 
         set(ONU_HAS_NO_QUEUED_PACKETS[iaa]);
-        if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
-          TSprint("[%d] PACKET_ARRIVED -> 0\n", iaa); 
+        //if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
+        //  TSprint("[%d] PACKET_ARRIVED -> 0\n", iaa); 
         clear(PACKET_ARRIVED[iaa]);
       }
     }

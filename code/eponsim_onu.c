@@ -17,7 +17,7 @@ void onu(int onuNum)
   status_processes_print();
   
   long  outcome;
-  int   NumGrantsToWait = 0;
+  //int   NumGrantsToWait = 0;
 
   //typedef enum {ONU_ST_ACTIVE, ONU_ST_IDLE, ONU_ST_SLEEP, ONU_ST_PROBE, FINAL_eONU_STATE_ENTRY} eONU_STATE;
   //simParams.ONU_TIME_SLEEP   = 0.005;
@@ -29,47 +29,46 @@ void onu(int onuNum)
   /* Permanent OLT behavior */
   while(!terminateSim)
   {
-    NumGrantsToWait = 0;
-    hold(0.0);
+    //NumGrantsToWait = 0;
     switch(onuAttrs[onuNum].state)
     {
       case ONU_ST_ACTIVE:
         wait(ONU_HAS_NO_QUEUED_PACKETS[onuNum]);
-        if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          TSprint("[%d] ACTIVE -> IDLE\n", onuNum); 
+        //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+        //  TSprint("[%d] ACTIVE -> IDLE\n", onuNum); 
         changeState(onuNum, ONU_ST_IDLE);
         break;
       case ONU_ST_IDLE:
         outcome = timed_wait(PACKET_ARRIVED[onuNum], simParams.ONU_TIME_TRIGGER);
         if(outcome == EVENT_OCCURRED)
         {
-          if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          {
-            TSprint("[%d] IDLE -> ACTIVE\n", onuNum); 
-          }
+          //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+          //{
+          //  TSprint("[%d] IDLE -> ACTIVE\n", onuNum); 
+          //}
           changeState(onuNum, ONU_ST_ACTIVE);
         }
         else if(outcome == TIMED_OUT)
         {
-          if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          {
-            TSprint("[%d] IDLE -> SLEEP\n", onuNum);
-          }
+          //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+          //{
+          //  TSprint("[%d] IDLE -> SLEEP\n", onuNum);
+          //}
           changeState(onuNum, ONU_ST_SLEEP);
         }
         else
         {
-          if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          {
-            TSprint("[%d] IDLE -> SLEEP\n", onuNum);
-          }
+          //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+          //{
+          //  TSprint("[%d] IDLE -> SLEEP\n", onuNum);
+          //}
           changeState(onuNum, ONU_ST_SLEEP);
         }
         break;
       case ONU_ST_SLEEP:
         hold(simParams.ONU_TIME_SLEEP);
-        if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          TSprint("[%d] SLEEP -> PROBE\n", onuNum); 
+        //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+        //  TSprint("[%d] SLEEP -> PROBE\n", onuNum); 
         changeState(onuNum, ONU_ST_PROBE);
         break;
       case ONU_ST_PROBE:
@@ -77,26 +76,26 @@ void onu(int onuNum)
         outcome = timed_wait(PACKET_ARRIVED[onuNum], 0.0); 
         if(outcome == EVENT_OCCURRED)
         {
-          if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          {
-            TSprint("[%d] PROBE -> ACTIVE\n", onuNum); 
-          }
+          //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+          //{
+          //  TSprint("[%d] PROBE -> ACTIVE\n", onuNum); 
+          //}
           changeState(onuNum, ONU_ST_ACTIVE);
         }
         else if(outcome == TIMED_OUT)
         {
-          if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          {
-            TSprint("[%d] PROBE -> SLEEP\n", onuNum); 
-          }
+          //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+          //{
+          //  TSprint("[%d] PROBE -> SLEEP\n", onuNum); 
+          //}
           changeState(onuNum, ONU_ST_SLEEP);
         }
         else 
         {
-          if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-          {
-            TSprint("[%d] PROBE -> SLEEP\n", onuNum); 
-          }
+          //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+          //{
+          //  TSprint("[%d] PROBE -> SLEEP\n", onuNum); 
+          //}
           changeState(onuNum, ONU_ST_SLEEP);
         }
         

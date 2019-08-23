@@ -182,7 +182,7 @@ double      maximumGrantCycle;
 
 #define MAX_SCHEDULER_NUM_SLOT    1000
 
-#define BOBB 500
+#define BOBB 5000
 
 /*
  * Some useful macros
@@ -212,6 +212,12 @@ typedef enum
   TAIL_RUN,
   TIME_TRACE
 } eSIM_TYPE;
+
+typedef enum
+{
+  END_TYPE_TIME,
+  END_TYPE_TRAFFIC
+} eEND_TYPE;
 
 /*
  * Type definitions
@@ -255,6 +261,7 @@ typedef struct
   int       ONU_GRANTED;
   double    TIME_PER_GRANT;
   int       boolRecordStateTime;
+  eEND_TYPE endType;
 
   int     NUM_PARTS;    /* Number of bandwidth partitions */
   double  LINK_SPEED_PER_PART;  /* in bps */
@@ -334,7 +341,8 @@ typedef struct
   
   eONU_STATE  state;
   double      timeInState[FINAL_eONU_STATE_ENTRY];
-  double      timeStateStarted; 
+  double      timeStateStarted;
+  int         cntState[FINAL_eONU_STATE_ENTRY]; 
 } sONU;
 
 /* Schedueing Pool Data Structure */
