@@ -11,6 +11,7 @@ import time
 paramList1 = [x * 0.001 for x in range(1,11)]
 livingProcesses = []
 cntLivingProcesses = 0
+projectDirectories = []
 
 def read_config():
     config = configparser.ConfigParser()
@@ -42,18 +43,25 @@ def start_sim(files, ver, param1):
     
     # Take off the .auto file extension
     fileName, fileExt = os.path.splitext(files)
-    # Edit the profile for each parameter file
+    
+    # Create a new directory for each simulation process
     if ver == 1:
         newPath = os.path.join(cwd,pathResults,runNum,fileName)
     if ver == 2:
-        newPath = os.path.join(cwd,pathResults,runNum,fileName+'_'+str(param1))
+        newPath = os.path.join(cwd,pathResults,runNum,fileName+'_'+'{:.6f}'.format(param1))
     os.makedirs(newPath)
+
+    # Add the current project path to the list of project paths
+    projectDirectories.append(newPath)
+
+    # Copy (and Format, if ver == 2) the sim_cfg file to the new dir
     with open(os.path.join(cwd,pathProfiles,files)) as f: 
         profileString = f.read()
     if ver == 2:
         profileString = profileString.format(param1)
     with open(os.path.join(newPath,"sim_cfg"),'w') as f:
         f.write(profileString)
+
     # Create a pid file which the c program will edit later
     pid_file = open(os.path.join(newPath,'pid'), 'w')
     pid_file.close()
@@ -63,7 +71,15 @@ def start_sim(files, ver, param1):
     # Run the system command.
     livingProcesses.append(subprocess.Popen([os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt'], cwd=newPath, shell=True))
     cntLivingProcesses += 1
-    print("Process Launched")
+    if ver == 1:
+        print("Process Launched ({})".format(fileName))
+    if ver == 2:
+        print("Process Launched ({})".format(fileName+'_'+'{:.6f}'.format(param1)))
+
+########################################################################
+# Start main code
+
+print('Launcher Started ({})'.format(runNum))
 
 # Read the config file
 config = read_config()
@@ -100,7 +116,19 @@ for files in os.listdir(pathProfiles):
         for param1 in paramList1:
             start_sim(files, 2, param1)
 
-print('All Processes have Finished')
+print('All Processes have Launched ({})'.format(runNum))
+
+# Wait for the remaining processes to finish
+while cntLivingProcesses > 0:
+    for process in livingProcesses:
+        if process.poll() != None:
+            livingProcesses.remove(process)
+            cntLivingProcesses -= 1
+            break
+    time.sleep(0.01)
+
+print('All Processes have Finished ({})'.format(runNum))
+
 
 # Rewrite the config file with the updated settings
 write_config(config)
