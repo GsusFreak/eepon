@@ -151,7 +151,7 @@ int ONUprint(int ONUids, const char *text, ...)
 void test_var_print()
 {
 #ifdef EnableTroubleshooting_v1
-  indicatorFile = fopen("A_Test_Variables", "w");
+  indicatorFile = fopen("A_Test_Variables.txt", "w");
   
   fprintf(indicatorFile, "last_updated_at: %10.5e\n", simtime());
   fprintf(indicatorFile, "heartbeat_process: %.0f\n", test_vars.heartbeat_process);
@@ -291,7 +291,7 @@ void open_TS_pointers() {
   int   ONUid;
   for (ONUid = 0; ONUid < 32; ONUid++) 
   {
-    sprintf(ONU_file_name, "B_ONU_output_file_%d", ONUid);
+    sprintf(ONU_file_name, "B_ONU_output_file_%d.txt", ONUid);
     ONU_files[ONUid] = fopen(ONU_file_name, "a");
     ONU_file_name[0] = 0;
   }
@@ -1351,129 +1351,129 @@ void write_sim_data(int runNumber, double trafficLoad)
   {
     double_str[0] = '\0';
     sprintf(double_str, "%d", runNumber);
-    sprintf(filename_suffix, "%srun%s_", filename_suffix, double_str);
+    //sprintf(filename_suffix, "%srun%s_", filename_suffix, double_str);
   }
-  switch(simParams.TRAFFIC_TYPE)
-  {
-    case TRAFFIC_POISSON:
-      strcat(filename_suffix, "pn_");
-      break;
-    case TRAFFIC_SELF_SIMILAR:
-      strcat(filename_suffix, "ss_");
-      break;
-  }
+  //switch(simParams.TRAFFIC_TYPE)
+  //{
+  //  case TRAFFIC_POISSON:
+  //    strcat(filename_suffix, "pn_");
+  //    break;
+  //  case TRAFFIC_SELF_SIMILAR:
+  //    strcat(filename_suffix, "ss_");
+  //    break;
+  //}
 
-  sprintf(filename_suffix, "%s%do_", filename_suffix, simParams.NUM_ONU);
+  //sprintf(filename_suffix, "%s%do_", filename_suffix, simParams.NUM_ONU);
   
-  sprintf(filename_suffix, "%s.txt", filename_suffix);
+  //sprintf(filename_suffix, ".txt%s", filename_suffix);
   
   /*
    * Open files
    */
   filename_str[0] = '\0';
-  sprintf(filename_str, "od_%s", filename_suffix);
+  sprintf(filename_str, "od.txt");
   odFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "odo_%s", filename_suffix);
+  sprintf(filename_str, "odo.txt");
   odoFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "odmn_%s", filename_suffix);
+  sprintf(filename_str, "odmn.txt");
   odmnFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "odmx_%s", filename_suffix);
+  sprintf(filename_str, "odmx.txt");
   odmxFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "hd_%s", filename_suffix);
+  sprintf(filename_str, "hd.txt");
   hdFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "ld_%s", filename_suffix);
+  sprintf(filename_str, "ld.txt");
   ldFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "ol_%s", filename_suffix);
+  sprintf(filename_str, "ol.txt");
   olFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "hl_%s", filename_suffix);
+  sprintf(filename_str, "hl.txt");
   hlFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "ll_%s", filename_suffix);
+  sprintf(filename_str, "ll.txt");
   llFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "cl_%s", filename_suffix);
+  sprintf(filename_str, "cl.txt");
   clFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "clmn_%s", filename_suffix);
+  sprintf(filename_str, "clmn.txt");
   clmnFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "clmx_%s", filename_suffix);
+  sprintf(filename_str, "clmx.txt");
   clmxFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "cll_%s", filename_suffix);
+  sprintf(filename_str, "cll.txt");
   cllFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "clh_%s", filename_suffix);
+  sprintf(filename_str, "clh.txt");
   clhFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "rs_%s", filename_suffix);
+  sprintf(filename_str, "rs.txt");
   rsFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "rsl_%s", filename_suffix);
+  sprintf(filename_str, "rsl.txt");
   rslFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "rsh_%s", filename_suffix);
+  sprintf(filename_str, "rsh.txt");
   rshFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "rg_%s", filename_suffix);
+  sprintf(filename_str, "rg.txt");
   rgFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "rgl_%s", filename_suffix);
+  sprintf(filename_str, "rgl.txt");
   rglFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "rgh_%s", filename_suffix);
+  sprintf(filename_str, "rgh.txt");
   rghFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "gsp_%s", filename_suffix);
+  sprintf(filename_str, "gsp.txt");
   gspFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "gs_%s", filename_suffix);
+  sprintf(filename_str, "gs.txt");
   gsFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "gsl_%s", filename_suffix);
+  sprintf(filename_str, "gsl.txt");
   gslFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "gsh_%s", filename_suffix);
+  sprintf(filename_str, "gsh.txt");
   gshFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "nz_%s", filename_suffix);
+  sprintf(filename_str, "nz.txt");
   nzFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "nzl_%s", filename_suffix);
+  sprintf(filename_str, "nzl.txt");
   nzlFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "nzh_%s", filename_suffix);
+  sprintf(filename_str, "nzh.txt");
   nzhFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "no_%s", filename_suffix);
+  sprintf(filename_str, "no.txt");
   noFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "nomx_%s", filename_suffix);
+  sprintf(filename_str, "nomx.txt");
   nomxFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "lb_%s", filename_suffix);
+  sprintf(filename_str, "lb.txt");
   lbFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "sr_%s", filename_suffix);
+  sprintf(filename_str, "sr.txt");
   srFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "srmx_%s", filename_suffix);
+  sprintf(filename_str, "srmx.txt");
   srmxFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "pd_%s", filename_suffix);
+  sprintf(filename_str, "pd.txt");
   pdFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "pl_%s", filename_suffix);
+  sprintf(filename_str, "pl.txt");
   plFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "clp_%s", filename_suffix);
+  sprintf(filename_str, "clp.txt");
   clpFile = fopen(filename_str,"a");
 
   double_str[0] = '\0';
@@ -1485,29 +1485,29 @@ void write_sim_data(int runNumber, double trafficLoad)
   }
 
   filename_str[0] = '\0';
-  sprintf(filename_str, "od_hist_%s_%s", double_str, filename_suffix);
+  sprintf(filename_str, "od_hist_%s.txt", double_str);
   odHistFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "gsp_hist_%s_%s", double_str, filename_suffix);
+  sprintf(filename_str, "gsp_hist_%s.txt", double_str);
   gspHistFile = fopen(filename_str,"a");
 
   filename_str[0] = '\0';
-  sprintf(filename_str, "od_%s_xl", filename_suffix);
+  sprintf(filename_str, "od_xl.txt");
   odxlFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "hd_%s_xl", filename_suffix);
+  sprintf(filename_str, "hd_xl.txt");
   hdxlFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "ld_%s_xl", filename_suffix);
+  sprintf(filename_str, "ld_xl.txt");
   ldxlFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "ol_%s_xl", filename_suffix);
+  sprintf(filename_str, "ol_xl.txt");
   olxlFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "hl_%s_xl", filename_suffix);
+  sprintf(filename_str, "hl_xl.txt");
   hlxlFile  = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "ll_%s_xl", filename_suffix);
+  sprintf(filename_str, "ll_xl.txt");
   llxlFile  = fopen(filename_str,"a");
   statsFile = fopen("stats","a");
   
@@ -1515,25 +1515,25 @@ void write_sim_data(int runNumber, double trafficLoad)
   for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
   {
     filename_str[0] = '\0';
-    sprintf(filename_str, "tpo%d_%s", loopIndex+1, filename_suffix);
+    sprintf(filename_str, "tpo%d.txt", loopIndex+1);
     tpoFile[loopIndex] = fopen(filename_str,"a");
   }
   /* Open files for throughput fairness */
   filename_str[0] = '\0';
-  sprintf(filename_str, "tfs_%s", filename_suffix);
+  sprintf(filename_str, "tfs.txt");
   tfsFile = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "tf_%s", filename_suffix);
+  sprintf(filename_str, "tf.txt");
   tfFile = fopen(filename_str,"a");
   /* Open files for competitive ratio */
   filename_str[0] = '\0';
-  sprintf(filename_str, "cr1_%s", filename_suffix);
+  sprintf(filename_str, "cr1.txt");
   cr1File = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "cr2_%s", filename_suffix);
+  sprintf(filename_str, "cr2.txt");
   cr2File = fopen(filename_str,"a");
   filename_str[0] = '\0';
-  sprintf(filename_str, "mcr_%s", filename_suffix);
+  sprintf(filename_str, "mcr.txt");
   mcrFile = fopen(filename_str,"a");
   
   // Open files to record the ONU State power consumption

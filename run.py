@@ -1,13 +1,14 @@
 import os
 import configparser
 import subprocess
-from shutil import copyfile
 import time
+import shutil
 
 #upperBound = 350
 #lowerBound = 250
 #increment = 50
 #paramList1 = [*range(lowerBound, upperBound+1, increment)]
+paramPrecision = 3
 paramList1 = [x * 0.001 for x in range(1,11)]
 livingProcesses = []
 cntLivingProcesses = 0
@@ -21,15 +22,16 @@ def read_config():
 def write_config(config):
     # Turn the string into an integer, increment it, and then turn it back into
     # a string with three spaces worth of left-hand zero padding (eg. 007)
-    runNum = str(int(config['SETTINGS']['run number']) + 1).zfill(3)
+    #runNum = str(int(config['SETTINGS']['run number']) + 1).zfill(3)
     # Update the config file with the new run number
-    config.set('SETTINGS', 'run number', runNum)
+    config.set('SETTINGS', 'run number', str(int(config['SETTINGS']['run number']) + 1).zfill(3))
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
 
 def start_sim(files, ver, param1):
     global cntLivingProcesses
     global livingProcesses
+    global resultDirectories
     
     # Trap the process in a while loop if there are already enough 
     # processes running
@@ -45,10 +47,12 @@ def start_sim(files, ver, param1):
     fileName, fileExt = os.path.splitext(files)
     
     # Create a new directory for each simulation process
+    formatString = '{:.'+str(paramPrecision)+'f}'
     if ver == 1:
         newPath = os.path.join(cwd,pathResults,runNum,fileName)
     if ver == 2:
-        newPath = os.path.join(cwd,pathResults,runNum,fileName+'_'+'{:.6f}'.format(param1))
+        newPath = os.path.join(cwd,pathResults,runNum,fileName+'_'+formatString.format(param1))
+    # Make the new directory
     os.makedirs(newPath)
 
     # Add the current project path to the list of project paths
@@ -74,15 +78,16 @@ def start_sim(files, ver, param1):
     if ver == 1:
         print("Process Launched ({})".format(fileName))
     if ver == 2:
-        print("Process Launched ({})".format(fileName+'_'+'{:.6f}'.format(param1)))
+        print("Process Launched ({})".format(fileName+'_'+formatString.format(param1)))
 
 ########################################################################
 # Start main code
 
-print('Launcher Started ({})'.format(runNum))
-
 # Read the config file
 config = read_config()
+
+# Rewrite the config file with the updated settings
+write_config(config)
 
 # Find the current working directory
 cwd = os.getcwd()
@@ -95,6 +100,8 @@ pathProfiles = config['SETTINGS']['profile path']
 pathResults = config['SETTINGS']['results path']
 
 # Print the executable (code), profiles, and results directories
+print('Launcher Started ({})'.format(runNum))
+
 #print(pathCode)
 #print(pathProfiles)
 #print(pathResults)
@@ -129,9 +136,9 @@ while cntLivingProcesses > 0:
 
 print('All Processes have Finished ({})'.format(runNum))
 
+for result in resultDirectories:
+    print(result)
 
-# Rewrite the config file with the updated settings
-write_config(config)
 
 
 
