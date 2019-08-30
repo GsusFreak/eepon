@@ -3,6 +3,9 @@ import configparser
 import subprocess
 import time
 import shutil
+import getopt
+import sys
+from glob import glob
 
 #upperBound = 350
 #lowerBound = 250
@@ -80,14 +83,30 @@ def start_sim(files, ver, param1):
     if ver == 2:
         print("Process Launched ({})".format(fileName+'_'+formatString.format(param1)))
 
+def gather_results(runNum):
+    paths = [p.rstrip('/') for p in glob(pathResults + '/*/')]
+    paths2 = [os.path.split(p) for p in paths]
+    #paths3 = [p[2] for p in paths2]
+    print(paths2)
+    sys.exit()
+    rootTmp, dirsTmp, filesTmp = os.walk(os.path.join(cwd,pathResults))
+    print(dirsTmp)
+    if runNum not in dirsTmp:
+        print('Invalid Run Number Given')
+        sys.exit()
+    root, dirs, files = os.walk(os.path.join(cwd,pathResults,runNum))
+    print(dirs)
+    for thisDir in dirs:
+        path = os.path.join(root, thisDir)
+        print(path)
+
+
 ########################################################################
 # Start main code
 
+
 # Read the config file
 config = read_config()
-
-# Rewrite the config file with the updated settings
-write_config(config)
 
 # Find the current working directory
 cwd = os.getcwd()
@@ -98,6 +117,22 @@ runNum = config['SETTINGS']['run number']
 pathCode = config['SETTINGS']['program path']
 pathProfiles = config['SETTINGS']['profile path']
 pathResults = config['SETTINGS']['results path']
+
+# Process the command line arguments
+print(sys.argv)
+try:
+    opts, args = getopt.getopt(sys.argv[1:],"r:", ["results="])
+except:
+    print("Options were passed incorrectly")
+    sys.exit()
+for opt, arg in opts:
+    if opt in ("-r", "--results"):
+        # If the generate results flag is given, only generate results
+        gather_results(arg)
+        sys.exit()
+
+# Rewrite the config file with the updated settings
+write_config(config)
 
 # Print the executable (code), profiles, and results directories
 print('Launcher Started ({})'.format(runNum))
@@ -136,9 +171,6 @@ while cntLivingProcesses > 0:
 
 print('All Processes have Finished ({})'.format(runNum))
 
-for result in resultDirectories:
-    print(result)
-
-
+gather_results(runNum)
 
 
