@@ -5,6 +5,7 @@ import time
 import shutil
 import getopt
 import sys
+import csv
 from glob import glob
 
 #upperBound = 350
@@ -84,21 +85,100 @@ def start_sim(files, ver, param1):
         print("Process Launched ({})".format(fileName+'_'+formatString.format(param1)))
 
 def gather_results(runNum):
-    paths = [p.rstrip('/') for p in glob(pathResults + '/*/')]
-    paths2 = [os.path.split(p) for p in paths]
-    #paths3 = [p[2] for p in paths2]
-    print(paths2)
-    sys.exit()
-    rootTmp, dirsTmp, filesTmp = os.walk(os.path.join(cwd,pathResults))
-    print(dirsTmp)
-    if runNum not in dirsTmp:
-        print('Invalid Run Number Given')
+    listRunNumbers = []
+
+    # Find the full results folder ie. /home/eepon/results
+    pathResultsAbs = os.path.join(cwd, pathResults)
+
+    # Find all of the objects inside that folder
+    for aDir in os.listdir(pathResultsAbs):
+        # If that object is a directory, add it to the listRunNumbers list
+        if os.path.isdir(os.path.join(pathResultsAbs, aDir)):
+            listRunNumbers.append(aDir)
+    
+    # Check to make sure that the directory exists
+    if runNum not in listRunNumbers:
+        print("Invalid Run Number")
         sys.exit()
-    root, dirs, files = os.walk(os.path.join(cwd,pathResults,runNum))
-    print(dirs)
-    for thisDir in dirs:
-        path = os.path.join(root, thisDir)
-        print(path)
+
+    # Edit the results path to include the given run number ie. /home/eepon/results/001
+    pathResultsAbs = os.path.join(pathResultsAbs, runNum)
+
+    # Make a list of the directories of each of the simulation instances inside of that
+    # results folder
+    # simInstances contains the absolute paths of each of the simulations run
+    simInstances = []
+    for aDir in os.listdir(pathResultsAbs):
+        if os.path.isdir(os.path.join(pathResultsAbs, aDir)):
+            simInstances.append(os.path.join(pathResultsAbs, aDir))
+    print(simInstances)
+
+    # Check to make sure simInstances is not empty
+    if not simInstances:
+        print('No simulation instances were found.')
+        sys.exit()
+
+    # Check if the desired results directory already exists (if results were
+    # already generated for it), and if so, exit the script. Otherwise,
+    # create the directory and proceed.
+    resultsDirFinalAbs = os.path.join(pathResultsAbs, RESULTS_FOLDER_NAME)
+    if OVERWRITE_RESULTS_DIRECTORY == True:
+        print('Results were Overwritten (-d option used)')
+        shutil.rmtree(resultsDirFinalAbs)
+        os.makedirs(resultsDirFinalAbs) 
+    else:
+        if resultsDirFinalAbs in simInstances:
+            print('ERROR: {} directory already exists'.format(RESULTS_FOLDER_NAME))
+            sys.exit()
+        else:
+            os.makedirs(resultsDirFinalAbs) 
+    
+    # Remove the results directory from the list of simulations to process
+    simInstances.remove(os.path.join(pathResultsAbs, RESULTS_FOLDER_NAME))
+    
+    # For each simulation instance
+    for simInstance in simInstances:
+        # For each file to be copied 
+        for AFile in filesToBeCopied:
+            # Check to make sure the source file exists
+            if AFile not in os.listdir(simInstance):
+                print('{} is not in the simulation instance {}'.format(AFile, simInstance))
+                sys.exit()
+
+            # Take off the file extension
+            fileName, fileExt = os.path.splitext(AFile)
+
+            # Break down the source directory into its parts
+            dirParts = os.path.split(simInstance)
+
+            # Name the new file name using the previous file name
+            # and the profile name
+            nameFileNew = '_'.join([fileName, dirParts[-1]])
+            nameFileNew = nameFileNew+fileExt
+            print(nameFileNew)
+
+            # Copy (and rename) the file
+            shutil.copyfile(os.path.join(simInstance, AFile), os.path.join(resultsDirFinalAbs, nameFileNew))
+
+    for compileFile, column in filesToBeCompiled:
+        fileOutput = []
+        ibb = 0
+        for simInstance in simInstances:
+            fileOutput.append([])
+            with open(os.path.join(simInstance, compileFile),'r') as f:
+                csvread = csv.reader(f, delimiter=' ')
+                for row in csvread:
+                    fileOutput[ibb].append(row[column])
+            ibb += 1
+        # Take off the file extension
+        fileName, fileExt = os.path.splitext(compileFile)
+        nameFileNew = '_'.join(['COMPILED', fileName, 'col'+str(column)])
+        nameFileNew = nameFileNew+fileExt
+        with open(os.path.join(resultsDirFinalAbs, nameFileNew),'w') as f:
+            csvwrite = csv.writer(f, delimiter=' ')
+            fileOutputInverted = [[fileOutput[j][i] for j in range(len(fileOutput))] for i in range(len(fileOutput[0]))]
+            csvwrite.writerows(fileOutputInverted)
+        print(fileOutputInverted)
 
 
 ########################################################################
@@ -112,20 +192,33 @@ config = read_config()
 cwd = os.getcwd()
 #print(cwd)
 
+# Set the default behavior when the results directory already exists
+OVERWRITE_RESULTS_DIRECTORY = False
+RESULTS_FOLDER_NAME = 'results'
+
 # Rename the settings to have shorter names
 runNum = config['SETTINGS']['run number']
 pathCode = config['SETTINGS']['program path']
 pathProfiles = config['SETTINGS']['profile path']
 pathResults = config['SETTINGS']['results path']
 
+# List the files to be copied
+#filesToBeCopied = ['ppc.txt']
+filesToBeCopied = ['ppc.txt', 'pc.txt', 'tpc.txt', 'od.txt']
+
+# For compiling files, the file name and column to be compiled must be given
+filesToBeCompiled = [('tpc.txt', 1), ('tpc.txt', 2), ('tpc.txt', 3), ('tpc.txt', 4)]
+
 # Process the command line arguments
-print(sys.argv)
+#print(sys.argv)
 try:
-    opts, args = getopt.getopt(sys.argv[1:],"r:", ["results="])
+    opts, args = getopt.getopt(sys.argv[1:],"r:d", ["results="])
 except:
     print("Options were passed incorrectly")
     sys.exit()
 for opt, arg in opts:
+    if opt in ('-d'):
+        OVERWRITE_RESULTS_DIRECTORY = True
     if opt in ("-r", "--results"):
         # If the generate results flag is given, only generate results
         gather_results(arg)
