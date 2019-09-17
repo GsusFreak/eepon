@@ -63,6 +63,7 @@ void olt()
   long txPktCount = 0;
   double packet_transmission_time;
   sENTITY_PKT currPkt;
+  int iaa;  // This is the number of the onu being serviced by the OLT
 
   /* Initialize the process */
   procId[0] = '\0';
@@ -77,7 +78,9 @@ void olt()
   {
     /* Reset the loop variables */
     txPktCount  = 0;
-      
+    iaa = 0;
+    
+    
     // Service the OLT packet queue
        
     /* Check for excessive buffer size */
@@ -88,7 +91,8 @@ void olt()
       transmitPkt = 0;
     }
     
-    for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+    //for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+    while(get_OLT_queue_size() > 0)
     {
       if(onuAttrs[iaa].state == ONU_ST_ACTIVE)
       {
@@ -128,6 +132,7 @@ void olt()
             
             /* Collect statistics on this packet */
             record_packet_stats_finish(&currPkt);
+            oltAttrs.lastONUServiced = iaa;
           }
         }
         //if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
@@ -137,9 +142,17 @@ void olt()
         //  TSprint("[%d] PACKET_ARRIVED -> 0\n", iaa); 
         clear(PACKET_ARRIVED[iaa]);
       }
+
+      // Update the onuNum variable for the next iteration of the while loop
+      iaa++;
+      if(iaa == simParams.NUM_ONU)
+      {
+        iaa = 0;
+      }
     }
+
     /* Make sure that any SERVICE_OLT events that happened while
-     * serviceing the queue don't immediately trigger the OLT
+     * servicing the queue don't immediately trigger the OLT
      * again. */
     //if(table_cnt(overallQueueDelay) < BOBB)
     //  TSprint("SERVICE_OLT -> 0\n"); 

@@ -219,6 +219,8 @@ typedef enum
   END_TYPE_TRAFFIC
 } eEND_TYPE;
 
+typedef enum {SLEEP_SCHEDULER_JOURNAL, SLEEP_SCHEDULER_HEAVY_TRAFFIC, SLEEP_SCHEDULER_HEAVY_TRAFFIC_HYBRID} eSLEEP_SCHEDULER;
+
 /*
  * Type definitions
  */
@@ -253,6 +255,8 @@ typedef struct
   double    IDLE_POWER_CONSUMPTION;
   double    SLEEP_POWER_CONSUMPTION;
   double    PROBE_POWER_CONSUMPTION;
+  double    WAKEUP_POWER_CONSUMPTION;
+
   double    ONU_TIME_SLEEP;
   double    ONU_TIME_TRIGGER;
   double    ONU_TIME_WAKEUP;
@@ -262,6 +266,7 @@ typedef struct
   double    TIME_PER_GRANT;
   int       boolRecordStateTime;
   eEND_TYPE endType;
+  eSLEEP_SCHEDULER sleepScheduler;
 
   int     NUM_PARTS;    /* Number of bandwidth partitions */
   double  LINK_SPEED_PER_PART;  /* in bps */
@@ -322,11 +327,12 @@ typedef struct
   STREAM        burstSizeStream;
   double        transmitByteCnt;
   TABLE         transmitThroughput;
+  int           lastONUServiced;
 } sOLT;
 
 
 /* ONU attribute structure */
-typedef enum {ONU_ST_ACTIVE, ONU_ST_IDLE, ONU_ST_SLEEP, ONU_ST_PROBE, FINAL_eONU_STATE_ENTRY} eONU_STATE;
+typedef enum {ONU_ST_ACTIVE, ONU_ST_IDLE, ONU_ST_SLEEP, ONU_ST_PROBE, ONU_ST_WAKEUP, FINAL_eONU_STATE_ENTRY} eONU_STATE;
 
 typedef struct
 {
@@ -343,6 +349,7 @@ typedef struct
   double      timeInState[FINAL_eONU_STATE_ENTRY];
   double      timeStateStarted;
   int         cntState[FINAL_eONU_STATE_ENTRY]; 
+  double      heavy_traffic_sleep_duration;
 } sONU;
 
 /* Schedueing Pool Data Structure */

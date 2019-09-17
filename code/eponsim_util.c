@@ -132,6 +132,35 @@ void grantCycle()
   create("Grant Cycle");
   while(!terminateSim)
   {
+    // Check to see if the granted ONU can be put to sleep under the HEAVY_TRAFFIC
+    // sleep type
+    int onuNum = simParams.ONU_GRANTED;
+    int queueSize;
+    if(onuAttrs[iaa].state == ONU_ST_ACTIVE)
+    {
+      // Start with the ONU right after the one that was just serviced
+      int iaa = oltAttrs.lastONUServiced + 1;
+      while(iaa ~= onuNum)
+      {
+        queueSize += get_ONU_queue_size(iaa);
+        iaa++;
+        if(iaa == simParams.NUM_ONU)
+        {
+          iaa = 0;
+        }
+        if(iaa == onuNum)
+        {
+          break;
+        }
+      }
+      if(onuAttrs.heavy_traffic_sleep_duration >= simParams.ONU_TIME_WAKEUP)
+      {
+        // Set the expected sleep duration for this ONU (minus the wakeup duration)
+        onuAttrs.heavy_traffic_sleep_duration = queueSize*simParams.TIME_PER_BYTE - simParams.ONU_TIME_WAKEUP;
+        // If this ONU will sleep for longer than the wakeup time, then sleep.
+        set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
+      }
+    } 
     simParams.ONU_GRANTED += 1;
     if(simParams.ONU_GRANTED == simParams.NUM_ONU)
       simParams.ONU_GRANTED = 0;
@@ -225,6 +254,41 @@ void remove_all_packets()
     }
     oltAttrs.packetsTail[onuNum] = NULL;
   }
+}
+
+int get_ONU_queue_size(int onuNum)
+{
+  sENTITY_PKT *tmp;
+  int queueSize = 0;
+  if(onuAttrs[onuNum].state == ONU_ST_ACTIVE)
+  {
+    tmp = oltAttrs.packetsHead[onuNum];
+    while(tmp != NULL)
+    {
+      queueSize += tmp->size;
+      tmp = tmp->next;
+    }
+  }
+  return queueSize;
+}
+
+int get_OLT_queue_size()
+{
+  sENTITY_PKT *tmp;
+  int queueSize = 0;
+  for(int onuNum = 0; onuNum < simParams.NUM_ONU; onuNum++)
+  {
+    if(onuAttrs[onuNum].state == ONU_ST_ACTIVE)
+    {
+      tmp = oltAttrs.packetsHead[onuNum];
+      while(tmp != NULL)
+      {
+        queueSize += tmp->size;
+        tmp = tmp->next;
+      }
+    }
+  }
+  return queueSize;
 }
 
 

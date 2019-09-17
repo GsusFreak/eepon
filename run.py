@@ -111,7 +111,7 @@ def gather_results(runNum):
     for aDir in os.listdir(pathResultsAbs):
         if os.path.isdir(os.path.join(pathResultsAbs, aDir)):
             simInstances.append(os.path.join(pathResultsAbs, aDir))
-    print(simInstances)
+    #print(simInstances)
 
     # Check to make sure simInstances is not empty
     if not simInstances:
@@ -126,15 +126,13 @@ def gather_results(runNum):
         print('Results were Overwritten (-d option used)')
         shutil.rmtree(resultsDirFinalAbs)
         os.makedirs(resultsDirFinalAbs) 
+        simInstances.remove(resultsDirFinalAbs)
     else:
         if resultsDirFinalAbs in simInstances:
             print('ERROR: {} directory already exists'.format(RESULTS_FOLDER_NAME))
             sys.exit()
         else:
             os.makedirs(resultsDirFinalAbs) 
-    
-    # Remove the results directory from the list of simulations to process
-    simInstances.remove(os.path.join(pathResultsAbs, RESULTS_FOLDER_NAME))
     
     # For each simulation instance
     for simInstance in simInstances:
@@ -155,7 +153,7 @@ def gather_results(runNum):
             # and the profile name
             nameFileNew = '_'.join([fileName, dirParts[-1]])
             nameFileNew = nameFileNew+fileExt
-            print(nameFileNew)
+            #print(nameFileNew)
 
             # Copy (and rename) the file
             shutil.copyfile(os.path.join(simInstance, AFile), os.path.join(resultsDirFinalAbs, nameFileNew))
@@ -178,7 +176,7 @@ def gather_results(runNum):
             csvwrite = csv.writer(f, delimiter=' ')
             fileOutputInverted = [[fileOutput[j][i] for j in range(len(fileOutput))] for i in range(len(fileOutput[0]))]
             csvwrite.writerows(fileOutputInverted)
-        print(fileOutputInverted)
+        #print(fileOutputInverted)
 
 
 ########################################################################

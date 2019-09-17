@@ -30,6 +30,8 @@ void changeState(int onuNum, eONU_STATE stateNew);
 sENTITY_PKT *create_a_packet(int size, int onuNum);
 void remove_packet(int onuNum);
 void remove_all_packets();
+int  get_OLT_queue_size();
+int  get_ONU_queue_size();
 
 
 void grantCycle();

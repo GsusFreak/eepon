@@ -23,6 +23,7 @@ EVENT SIM_END_EVENT;
 EVENT SERVICE_OLT;
 EVENT PACKET_ARRIVED[MAX_ONU];
 EVENT ONU_HAS_NO_QUEUED_PACKETS[MAX_ONU];
+EVENT HEAVY_TRAFFIC_SLEEP_TRIGGERED[MAX_ONU];
 
 /* simulation parameters data structure */
 sSIM_PARAMS simParams;
@@ -1038,6 +1039,7 @@ void read_sim_cfg_file()
   simParams.IDLE_POWER_CONSUMPTION   = 4.1;
   simParams.SLEEP_POWER_CONSUMPTION  = 2.5;
   simParams.PROBE_POWER_CONSUMPTION  = 3.5;
+  simParams.WAKEUP_POWER_CONSUMPTION = (simParams.PROBE_POWER_CONSUMPTION + simParams.ACTIVE_POWER_CONSUMPTION)/2.0;  
 
   simParams.ONU_TIME_SLEEP   = 0.005;
   simParams.ONU_TIME_TRIGGER = 0.0001;
@@ -1225,6 +1227,23 @@ void read_sim_cfg_file()
         else if(strcmp(currToken, "END_TYPE_TIME") == 0)
         {
           simParams.endType = END_TYPE_TIME;
+        }
+      }
+      else if(strcmp(currToken, "SLEEP_SCHEDULER") == 0)
+      {
+        currToken[0] = '\0';
+        fscanf(cfgFile, "%s", currToken);
+        if(strcmp(currToken, "JOURNAL") == 0)
+        {
+          simParams.sleepScheduler = SLEEP_SCHEDULER_JOURNAL;
+        }
+        else if(strcmp(currToken, "HEAVY_TRAFFIC") == 0)
+        {
+          simParams.sleepScheduler = SLEEP_SCHEDULER_HEAVY_TRAFFIC;
+        }
+        else if(strcmp(currToken, "HEAVY_TRAFFIC_HYBRID") == 0)
+        {
+          simParams.sleepScheduler = SLEEP_SCHEDULER_HEAVY_TRAFFIC_HYBRID;
         }
       }
       else if(strcmp(currToken, "GET_TAIL") == 0)
@@ -1558,10 +1577,10 @@ void write_sim_data(int runNumber, double trafficLoad)
 
   if(simParams.simType == ACTUAL_RUN) 
   {
-    double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0;
-    double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrAvg = 0;
-    double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0;
-    int    cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0;
+    double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0, timeWakeup;
+    double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrWakeup, pwrAvg = 0;
+    double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0, pctWakeup;
+    int    cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0, cntWakeup;
     for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
       // Please see the emun eONU_STATE in eponsim.h to find the
@@ -1570,41 +1589,47 @@ void write_sim_data(int runNumber, double trafficLoad)
       timeIdle += onuAttrs[iaa].timeInState[1];
       timeSleep += onuAttrs[iaa].timeInState[2];
       timeProbe += onuAttrs[iaa].timeInState[3];
+      timeWakeup += onuAttrs[iaa].timeInState[4];
 
       cntActive += onuAttrs[iaa].cntState[0]; 
       cntIdle += onuAttrs[iaa].cntState[1]; 
       cntProbe += onuAttrs[iaa].cntState[2]; 
       cntSleep += onuAttrs[iaa].cntState[3]; 
+      cntWakeup += onuAttrs[iaa].cntState[4]; 
     }
     timeActive /= simParams.NUM_ONU;
     timeIdle /= simParams.NUM_ONU;
     timeSleep /= simParams.NUM_ONU;
     timeProbe /= simParams.NUM_ONU;
+    timeWakeup /= simParams.NUM_ONU;
 
     cntActive /= simParams.NUM_ONU;
     cntIdle /= simParams.NUM_ONU;
     cntSleep /= simParams.NUM_ONU;
     cntProbe /= simParams.NUM_ONU;
+    cntWakeup /= simParams.NUM_ONU;
 
-    pctActive = timeActive/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
-    pctIdle = timeIdle/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
-    pctSleep = timeSleep/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
-    pctProbe = timeProbe/(timeActive + timeIdle + timeSleep + timeProbe)*100.0;
+    pctActive = timeActive/(timeActive + timeIdle + timeSleep + timeProbe + timeWakeup)*100.0;
+    pctIdle = timeIdle/(timeActive + timeIdle + timeSleep + timeProbe + timeWakeup)*100.0;
+    pctSleep = timeSleep/(timeActive + timeIdle + timeSleep + timeProbe + timeWakeup)*100.0;
+    pctProbe = timeProbe/(timeActive + timeIdle + timeSleep + timeProbe + timeWakeup)*100.0;
+    pctWakeup = timeWakeup/(timeActive + timeIdle + timeSleep + timeProbe + timeWakeup)*100.0;
 
     pwrActive = timeActive*simParams.ACTIVE_POWER_CONSUMPTION;
     pwrIdle =  timeIdle*simParams.IDLE_POWER_CONSUMPTION;
     pwrSleep = timeSleep*simParams.SLEEP_POWER_CONSUMPTION;
     pwrProbe = timeProbe*simParams.PROBE_POWER_CONSUMPTION;
-    pwrAvg = pwrActive + pwrIdle + pwrSleep + pwrProbe;
-    fprintf(tpcFile, "%f %f %f %f %f\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe);
+    pwrWakeup = timeWakeup*simParams.WAKEUP_POWER_CONSUMPTION;
+    pwrAvg = pwrActive + pwrIdle + pwrSleep + pwrProbe + pwrWakeup;
+    fprintf(tpcFile, "%f %f %f %f %f %f\n", trafficLoad, timeActive, timeIdle, timeSleep, timeProbe, timeWakeup);
     //for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     //{
     //  fprintf(tpcFile, "%f ", onuAttrs[iaa].timeInState[4]);
     //}
     //fprintf(tpcFile, "\n");
-    fprintf(ppcFile, "%f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe);
-    fprintf(cpcFile, "%f %d %d %d %d\n", trafficLoad, cntActive, cntIdle, cntSleep, cntProbe);
-    fprintf(pcFile, "%f %f %f %f %f %f\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe);
+    fprintf(ppcFile, "%f %f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe, pctWakeup);
+    fprintf(cpcFile, "%f %d %d %d %d %d\n", trafficLoad, cntActive, cntIdle, cntSleep, cntProbe, cntWakeup);
+    fprintf(pcFile, "%f %f %f %f %f %f %f\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe, pwrWakeup);
   }
   if((simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) /*&& (simParams.OLT_TYPE != OLT_APS)*/)
   {
