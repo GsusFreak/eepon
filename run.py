@@ -74,7 +74,7 @@ def start_sim(files, ver, param1):
     pid_file = open(os.path.join(newPath,'pid'), 'w')
     pid_file.close()
     # Print the system command for debug purposes
-    #print('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt" &')
+    #print('sh -c "cd '+newPath+'; '+os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt"')
      
     # Run the system command.
     livingProcesses.append(subprocess.Popen([os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt'], cwd=newPath, shell=True))

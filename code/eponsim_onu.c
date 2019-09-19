@@ -116,9 +116,6 @@ void journal(int onuNum)
 
 void heavy_traffic(int onuNum)
 {
-  long   outcome;
-  int    queueSize, onuNum;
-  double transmissionTime;
   switch(onuAttrs[onuNum].state)
   {
     case ONU_ST_ACTIVE:
@@ -128,7 +125,7 @@ void heavy_traffic(int onuNum)
       changeState(onuNum, ONU_ST_SLEEP);
       break;
     case ONU_ST_SLEEP:
-      hold(onuAttrs.heavy_traffic_sleep_duration);
+      hold(onuAttrs[onuNum].heavy_traffic_sleep_duration);
       changeState(onuNum, ONU_ST_WAKEUP);
       break;
     case ONU_ST_WAKEUP:

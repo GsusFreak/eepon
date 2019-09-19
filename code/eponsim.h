@@ -481,6 +481,7 @@ extern sSS_STAT   lightQueueLengthStat;
 extern EVENT SERVICE_OLT;
 extern EVENT PACKET_ARRIVED[MAX_ONU];
 extern EVENT ONU_HAS_NO_QUEUED_PACKETS[MAX_ONU];
+extern EVENT HEAVY_TRAFFIC_SLEEP_TRIGGERED[MAX_ONU];
 
 /* Reset throughput flag */
 extern int    reset_throughput_flag;

@@ -5,6 +5,7 @@
 #include <math.h>
 #include "hungarian.h"
 #include "eponsim.h"
+#include "eponsim_util.h"
 
 /* 
  * General Utility Functions 
@@ -135,36 +136,55 @@ void grantCycle()
     // Check to see if the granted ONU can be put to sleep under the HEAVY_TRAFFIC
     // sleep type
     int onuNum = simParams.ONU_GRANTED;
-    int queueSize;
-    if(onuAttrs[iaa].state == ONU_ST_ACTIVE)
+    if(onuNum >= simParams.NUM_ONU || onuNum < 0)
     {
+      TSprint("simParams.ONU_GRANTED is %d (invalid value)", onuNum);
+      dump_sim_core();
+    }
+    else
+    {
+      int queueSize;
       // Start with the ONU right after the one that was just serviced
       int iaa = oltAttrs.lastONUServiced + 1;
-      while(iaa ~= onuNum)
+      if(iaa == simParams.NUM_ONU)
+        iaa = 0;
+      if(iaa < simParams.NUM_ONU && iaa >= 0)
       {
-        queueSize += get_ONU_queue_size(iaa);
-        iaa++;
-        if(iaa == simParams.NUM_ONU)
+        // Add up the queue length for all ONUs between the one that is 
+        // currently being serviced and the one that wants to receive
+        // data
+        while(iaa != onuNum)
         {
-          iaa = 0;
-        }
-        if(iaa == onuNum)
-        {
-          break;
-        }
+          queueSize += get_ONU_queue_size(iaa);
+          iaa++;
+          if(iaa == simParams.NUM_ONU)
+          {
+            iaa = 0;
+          }
+          if(iaa == onuNum)
+          {
+            break;
+          }
+        } 
       }
-      if(onuAttrs.heavy_traffic_sleep_duration >= simParams.ONU_TIME_WAKEUP)
+      else
+      {
+        TSprint("iaa inside grantCycle() is %d (invalid value)", iaa);
+        dump_sim_core();
+      }
+      // If the time until transmission is longer than the wakeup time, put the ONU to sleep.
+      if(onuAttrs[onuNum].heavy_traffic_sleep_duration >= simParams.ONU_TIME_WAKEUP)
       {
         // Set the expected sleep duration for this ONU (minus the wakeup duration)
-        onuAttrs.heavy_traffic_sleep_duration = queueSize*simParams.TIME_PER_BYTE - simParams.ONU_TIME_WAKEUP;
+        onuAttrs[onuNum].heavy_traffic_sleep_duration = queueSize*simParams.TIME_PER_BYTE - simParams.ONU_TIME_WAKEUP;
         // If this ONU will sleep for longer than the wakeup time, then sleep.
         set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
       }
-    } 
-    simParams.ONU_GRANTED += 1;
-    if(simParams.ONU_GRANTED == simParams.NUM_ONU)
-      simParams.ONU_GRANTED = 0;
-    hold(simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU);   
+      simParams.ONU_GRANTED += 1;
+      if(simParams.ONU_GRANTED == simParams.NUM_ONU)
+        simParams.ONU_GRANTED = 0;
+      hold(simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU);   
+    }
   }
 }
 
@@ -258,16 +278,18 @@ void remove_all_packets()
 
 int get_ONU_queue_size(int onuNum)
 {
+  if(onuNum > simParams.NUM_ONU || onuNum < 0)
+  {
+    TSprint("onuNum %d was passed to get_ONU_queue_size", onuNum);
+    dump_sim_core();
+  }
   sENTITY_PKT *tmp;
   int queueSize = 0;
-  if(onuAttrs[onuNum].state == ONU_ST_ACTIVE)
+  tmp = oltAttrs.packetsHead[onuNum];
+  while(tmp != NULL)
   {
-    tmp = oltAttrs.packetsHead[onuNum];
-    while(tmp != NULL)
-    {
-      queueSize += tmp->size;
-      tmp = tmp->next;
-    }
+    queueSize += tmp->size;
+    tmp = tmp->next;
   }
   return queueSize;
 }
