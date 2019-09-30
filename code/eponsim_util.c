@@ -213,6 +213,7 @@ sENTITY_PKT *create_a_packet(int size, int onuNum)
     newPkt->creationTime = 0;
     newPkt->size = size;
     newPkt->next = NULL;
+    newPkt->prev = NULL;
     newPkt->onuNum = onuNum;
   }
   else
@@ -227,13 +228,36 @@ sENTITY_PKT *create_a_packet(int size, int onuNum)
 }
 
 /* Remove a packet entity from the system */
-void remove_packet(int onuNum)
+void remove_packet(sENTITY_PKT* packet)
 {
-  sENTITY_PKT *tmp;
-  tmp = oltAttrs.packetsHead[onuNum];
-  oltAttrs.packetsHead[onuNum] = oltAttrs.packetsHead[onuNum]->next;
+  if(packet == NULL)
+  {
+    TSprint("ERROR: Attempted to Remove a NULL Packet\n");
+    dump_sim_core();
+  }
+  int onuNum = packet->onuNum;
+  sENTITY_PKT* prevPkt;
+  
+  // If there is no packet after this packet, make the previous packet the new tail
+  if(packet->next == NULL)
+  {
+    oltAttrs.packetsTail = packet->prev;
+  }
+  // If there's a packet before this one, connect the previous packet
+  // to the next packet thereby cutting this packet out of the linked
+  // list
+  if(packet->prev != NULL)
+  {
+    prevPkt = packet->prev;
+    prevPkt->next = packet->next;
+  } 
+  // Otherwise, this must be the head packet
+  else
+  {
+    oltAttrs.packetsHead = packet->next;
+  }
   /* Remove this packets size from the queue size */
-  oltAttrs.packetQueueSize -= tmp->size;
+  oltAttrs.packetQueueSize -= packet->size;
   /* Remove this packet from the queue packet count */
   if(oltAttrs.packetQueueNum == 0)
   {
@@ -248,47 +272,52 @@ void remove_packet(int onuNum)
   else
   {
     oltAttrs.packetQueueNum--;
-    test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
+    test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][packet->onuNum]++;
     test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
   }
-  free(tmp);
+  free(packet);
 }
 
 
 void remove_all_packets()
 {
   sENTITY_PKT *tmp;
-  for(int onuNum = 0; onuNum < simParams.NUM_ONU; onuNum++)
+  while(oltAttrs.packetsHead != NULL)
   {
-    while(oltAttrs.packetsHead[onuNum] != NULL)
+    tmp = oltAttrs.packetsHead;
+    if(tmp == NULL)
     {
-      tmp = oltAttrs.packetsHead[onuNum];
-      oltAttrs.packetsHead[onuNum] = oltAttrs.packetsHead[onuNum]->next;
-      /* Remove this packets size from the queue size */
-      oltAttrs.packetQueueSize -= tmp->size;
-      /* Remove this packet from the queue packet count */
-      oltAttrs.packetQueueNum--;
-      test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
-      test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
-      free(tmp);
+      TSprint("ERROR: Attempted to Remove a NULL Packet\n");
+      dump_sim_core();
     }
-    oltAttrs.packetsTail[onuNum] = NULL;
+    oltAttrs.packetsHead = oltAttrs.packetsHead->next;
+    /* Remove this packets size from the queue size */
+    oltAttrs.packetQueueSize -= tmp->size;
+    /* Remove this packet from the queue packet count */
+    oltAttrs.packetQueueNum--;
+    test_vars.data_pkt_destroyed[test_vars.runNum][test_vars.loadOrderCounter][tmp->onuNum]++;
+    test_vars.data_pkt_destroyed_olt[test_vars.runNum][test_vars.loadOrderCounter]++;
+    free(tmp);
   }
+  oltAttrs.packetsTail = NULL;
 }
 
 int get_ONU_queue_size(int onuNum)
 {
   if(onuNum > simParams.NUM_ONU || onuNum < 0)
   {
-    TSprint("onuNum %d was passed to get_ONU_queue_size", onuNum);
+    TSprint("onuNum = %d was passed to get_ONU_queue_size", onuNum);
     dump_sim_core();
   }
   sENTITY_PKT *tmp;
   int queueSize = 0;
-  tmp = oltAttrs.packetsHead[onuNum];
+  tmp = oltAttrs.packetsHead;
   while(tmp != NULL)
   {
-    queueSize += tmp->size;
+    if(tmp->onuNum == onuNum)
+    {
+      queueSize += tmp->size;
+    }
     tmp = tmp->next;
   }
   return queueSize;
@@ -300,14 +329,11 @@ int get_OLT_queue_size()
   int queueSize = 0;
   for(int onuNum = 0; onuNum < simParams.NUM_ONU; onuNum++)
   {
-    if(onuAttrs[onuNum].state == ONU_ST_ACTIVE)
+    tmp = oltAttrs.packetsHead;
+    while(tmp != NULL)
     {
-      tmp = oltAttrs.packetsHead[onuNum];
-      while(tmp != NULL)
-      {
-        queueSize += tmp->size;
-        tmp = tmp->next;
-      }
+      queueSize += tmp->size;
+      tmp = tmp->next;
     }
   }
   return queueSize;

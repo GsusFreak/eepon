@@ -24,23 +24,24 @@ double stream_pareto_epon(STREAM randomStream, double shapeParam, double locatio
 }
 
 /* Packet assignment function */
-void assign_packet(sENTITY_PKT *pkt, int onuNum)
+void assign_packet(sENTITY_PKT *pkt)
 {
   if(pkt != NULL)
   {
     pkt->creationTime = simtime();
-    if(oltAttrs.packetsHead[onuNum] == NULL)
+    if(oltAttrs.packetsHead == NULL)
     {
       /* this is the only packet */
-      oltAttrs.packetsHead[onuNum] = pkt;
-      oltAttrs.packetsTail[onuNum] = pkt;
+      oltAttrs.packetsHead = pkt;
+      oltAttrs.packetsTail = pkt;
     }
     else
     {
       /* Go to the end of the packet list for this ONU */
-      oltAttrs.packetsTail[onuNum]->next = pkt;
+      pkt->prev = oltAttrs.packetsTail;
+      oltAttrs.packetsTail->next = pkt;
       pkt->next = NULL;
-      oltAttrs.packetsTail[onuNum] = pkt;
+      oltAttrs.packetsTail = pkt;
     }
     /* Add this packet's size to the queue size */
     oltAttrs.packetQueueSize += pkt->size;
@@ -48,13 +49,13 @@ void assign_packet(sENTITY_PKT *pkt, int onuNum)
     oltAttrs.packetQueueNum++;
 
     // Tell the ONU that a packet has arrived
-    //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-    //  TSprint("[%d] PACKET_ARRIVED -> 1\n", onuNum); 
-    set(PACKET_ARRIVED[onuNum]);
+    //if(table_cnt(overallQueueDelay) < BOBB && pkt->onuNum == 0)
+    //  TSprint("[%d] PACKET_ARRIVED -> 1\n", pkt->onuNum); 
+    set(PACKET_ARRIVED[pkt->onuNum]);
 
-    //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-    //  TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 0\n", onuNum); 
-    clear(ONU_HAS_NO_QUEUED_PACKETS[onuNum]);
+    //if(table_cnt(overallQueueDelay) < BOBB && pkt->onuNum == 0)
+    //  TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 0\n", pkt->onuNum); 
+    clear(ONU_HAS_NO_QUEUED_PACKETS[pkt->onuNum]);
   }
 }
 
@@ -77,9 +78,9 @@ void traffic_src_poisson(int onuNum)
   {
     /* Generate packets according to a particular distribution */
     hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
-    pktSize = (int) stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
+    pktSize = (int)stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
     pktPtr = create_a_packet(pktSize, onuNum);
-    assign_packet(pktPtr, onuNum);
+    assign_packet(pktPtr);
     
     // Tell the OLT that a packet has arrived
     //if(table_cnt(overallQueueDelay) < BOBB)
@@ -192,7 +193,7 @@ void traffic_agg_self_similar(int onuNum)
     receive(oltAttrs.pktMailbox, (long *) &pktPtr);
 
     /* Place in Queue for ONU */
-    assign_packet(pktPtr, onuNum);
+    assign_packet(pktPtr);
 
     // Tell the OLT that a packet has arrived
     set(SERVICE_OLT);

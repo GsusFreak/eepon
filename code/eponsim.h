@@ -306,13 +306,14 @@ typedef struct entity_pkt
   int     forecastPktNumber;
   int     onuNum;
   struct  entity_pkt *next;
+  struct  entity_pkt *prev;
 } sENTITY_PKT;
 
 /* OLT attribute structure */
 typedef struct
 {
-  sENTITY_PKT   *packetsHead[MAX_ONU];
-  sENTITY_PKT   *packetsTail[MAX_ONU];
+  sENTITY_PKT   *packetsHead;
+  sENTITY_PKT   *packetsTail;
   double        packetQueueSize;  /* Packet Queue Size (in bytes) */
   unsigned long packetQueueNum;   /* # of Packets in Queue */
   double        minArrivalTime;   /* Minimum arrival time in Queue */

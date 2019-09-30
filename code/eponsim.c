@@ -143,6 +143,7 @@ int ONUprint(int ONUids, const char *text, ...)
   va_end(args);
   return out;
 #else
+  ONUids += 1;
   return 0;
 #endif
 }
@@ -397,11 +398,11 @@ void init_data_structures()
   oltAttrs.packetQueueNum = 0;
   oltAttrs.transmitByteCnt  = 0;
   TSprint("Setting all onuAttrs state to IDLE\n");
+  oltAttrs.packetsHead = NULL;
+  oltAttrs.packetsTail = NULL;
   for(i=0; i < simParams.NUM_ONU; i++)
   {
-    oltAttrs.packetsHead[i] = NULL;
-    oltAttrs.packetsTail[i] = NULL;
-    onuAttrs[i].latency   = 0;
+    onuAttrs[i].latency = 0;
     onuAttrs[i].transmitByteCnt = 0;
     onuAttrs[i].state = ONU_ST_IDLE;
     onuAttrs[i].timeStateStarted = simtime();
@@ -1340,7 +1341,7 @@ void setup_hist_tail()
 void write_sim_data(int runNumber, double trafficLoad)
 {
   int     loopIndex;
-  char    filename_suffix[100];
+  //char    filename_suffix[100];
   char    filename_str[150];
   char    double_str[15];
   char    *charPtr;
@@ -1364,7 +1365,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *pcFile, *tpcFile, *ppcFile, *cpcFile;
 
   /* Determine file names */
-  filename_suffix[0] = '\0';
+  //filename_suffix[0] = '\0';
   /* To support multiple runs, record the run number for run number greater than 0 */
   if(runNumber > 0)
   {
