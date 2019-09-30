@@ -235,11 +235,16 @@ void remove_packet(sENTITY_PKT* packet)
     TSprint("ERROR: Attempted to Remove a NULL Packet\n");
     dump_sim_core();
   }
-  int onuNum = packet->onuNum;
-  sENTITY_PKT* prevPkt;
+  sENTITY_PKT *prevPkt, *nextPkt;
   
+  // If this packet is the head packet, make the next
+  // packet the new head packet
+  if(oltAttrs.packetsHead == packet)
+  {
+    oltAttrs.packetsHead = packet->next;
+  }
   // If there is no packet after this packet, make the previous packet the new tail
-  if(packet->next == NULL)
+  if(oltAttrs.packetsTail == packet)
   {
     oltAttrs.packetsTail = packet->prev;
   }
@@ -251,10 +256,10 @@ void remove_packet(sENTITY_PKT* packet)
     prevPkt = packet->prev;
     prevPkt->next = packet->next;
   } 
-  // Otherwise, this must be the head packet
-  else
+  if(packet->next != NULL)
   {
-    oltAttrs.packetsHead = packet->next;
+    nextPkt = packet->next;
+    nextPkt->prev = packet->prev;
   }
   /* Remove this packets size from the queue size */
   oltAttrs.packetQueueSize -= packet->size;

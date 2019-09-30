@@ -40,7 +40,6 @@ void assign_packet(sENTITY_PKT *pkt)
       /* Go to the end of the packet list for this ONU */
       pkt->prev = oltAttrs.packetsTail;
       oltAttrs.packetsTail->next = pkt;
-      pkt->next = NULL;
       oltAttrs.packetsTail = pkt;
     }
     /* Add this packet's size to the queue size */
