@@ -538,6 +538,15 @@ void dump_sim_core()
 void sim_cleanup()
 {
   remove_all_packets();
+
+  // Set all table pointers to NULL temporarily
+  overallQueueDelay = NULL;
+  heavyQueueDelay = NULL;
+  lightQueueDelay = NULL;
+  overallQueueLength = NULL;
+  heavyQueueLength = NULL;
+  lightQueueLength = NULL;
+  throughputFairness = NULL;
 }
 
 
@@ -1578,10 +1587,10 @@ void write_sim_data(int runNumber, double trafficLoad)
 
   if(simParams.simType == ACTUAL_RUN) 
   {
-    double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0, timeWakeup;
-    double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrWakeup, pwrAvg = 0;
-    double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0, pctWakeup;
-    int    cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0, cntWakeup;
+    double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0, timeWakeup = 0;
+    double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrWakeup = 0, pwrAvg = 0;
+    double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0, pctWakeup = 0;
+    int    cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0, cntWakeup = 0;
     for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
       // Please see the emun eONU_STATE in eponsim.h to find the
