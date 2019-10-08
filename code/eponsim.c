@@ -931,6 +931,8 @@ void sim()
     PACKET_ARRIVED[i] = event(tempStr_2);
     sprintf(tempStr_2, "ONU #%d Has No Queued Packets", i);
     ONU_HAS_NO_QUEUED_PACKETS[i] = event(tempStr_2);
+    sprintf(tempStr_2, "ONU #%d HEAVY TRAFFIC SLEEP TRIGGERED", i);
+    HEAVY_TRAFFIC_SLEEP_TRIGGERED[i] = event(tempStr_2);
 
     switch(simParams.TRAFFIC_TYPE)
     {
@@ -1603,8 +1605,8 @@ void write_sim_data(int runNumber, double trafficLoad)
 
       cntActive += onuAttrs[iaa].cntState[0]; 
       cntIdle += onuAttrs[iaa].cntState[1]; 
-      cntProbe += onuAttrs[iaa].cntState[2]; 
-      cntSleep += onuAttrs[iaa].cntState[3]; 
+      cntSleep += onuAttrs[iaa].cntState[2]; 
+      cntProbe += onuAttrs[iaa].cntState[3]; 
       cntWakeup += onuAttrs[iaa].cntState[4]; 
     }
     timeActive /= simParams.NUM_ONU;

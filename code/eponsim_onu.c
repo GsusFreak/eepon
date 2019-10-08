@@ -119,15 +119,27 @@ void heavy_traffic(int onuNum)
   switch(onuAttrs[onuNum].state)
   {
     case ONU_ST_ACTIVE:
+      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+      //{
+      //  TSprint("[%d] ACTIVE was entered\n", onuNum); 
+      //}
       // This is performed in assign_packet in the traffic.c file
       wait(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
       changeState(onuNum, ONU_ST_SLEEP);
       break;
     case ONU_ST_SLEEP:
+      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+      //{
+      //  TSprint("[%d] SLEEP was entered\n", onuNum); 
+      //}
       hold(onuAttrs[onuNum].heavy_traffic_sleep_duration);
       changeState(onuNum, ONU_ST_WAKEUP);
       break;
     case ONU_ST_WAKEUP:
+      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+      //{
+      //  TSprint("[%d] WAKEUP was entered\n", onuNum); 
+      //}
       hold(simParams.ONU_TIME_WAKEUP);
       // Clear the "sleep due to heavy traffic flag" 
       // so that it won't matter if it was set during
@@ -136,10 +148,18 @@ void heavy_traffic(int onuNum)
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case ONU_ST_IDLE:
+      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+      //{
+      //  TSprint("[%d] IDLE was entered\n", onuNum); 
+      //}
       // In this alrogithm, the IDLE state should never be used
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case ONU_ST_PROBE:
+      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
+      //{
+      //  TSprint("[%d] PROBE was entered\n", onuNum); 
+      //}
       // In this alrogithm, the PROBE state should never be used
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
