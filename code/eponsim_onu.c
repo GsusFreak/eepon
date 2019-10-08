@@ -119,9 +119,8 @@ void heavy_traffic(int onuNum)
   switch(onuAttrs[onuNum].state)
   {
     case ONU_ST_ACTIVE:
+      // This is performed in assign_packet in the traffic.c file
       wait(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
-      // Caluclate the duration of the sleep
-      
       changeState(onuNum, ONU_ST_SLEEP);
       break;
     case ONU_ST_SLEEP:
@@ -130,6 +129,10 @@ void heavy_traffic(int onuNum)
       break;
     case ONU_ST_WAKEUP:
       hold(simParams.ONU_TIME_WAKEUP);
+      // Clear the "sleep due to heavy traffic flag" 
+      // so that it won't matter if it was set during
+      // the sleeping period
+      clear(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case ONU_ST_IDLE:
@@ -137,7 +140,7 @@ void heavy_traffic(int onuNum)
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case ONU_ST_PROBE:
-      // In this alrogithm, the IDLE state should never be used
+      // In this alrogithm, the PROBE state should never be used
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case FINAL_eONU_STATE_ENTRY:

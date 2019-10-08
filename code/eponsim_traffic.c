@@ -47,6 +47,19 @@ void assign_packet(sENTITY_PKT *pkt)
     /* Add this packet to the queue packet count */
     oltAttrs.packetQueueNum++;
 
+    
+    // Every time a packet is added, check to see if this ONU can be put to sleep
+    // Calculate the potential sleep time for this ONU
+    double timeUntilONUsNextPacket = get_queue_size_until_certain_ONU(pkt->onuNum) * simParams.TIME_PER_BYTE;
+    onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+    // If sleep time is > 0, sleep. (The sleep time can be less than zero since
+    // the WAKEUP time is subtracted from the queue time)
+    if(onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration >= 0)
+    {
+      set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[pkt->onuNum]);
+    }
+    
+    
     // Tell the ONU that a packet has arrived
     //if(table_cnt(overallQueueDelay) < BOBB && pkt->onuNum == 0)
     //  TSprint("[%d] PACKET_ARRIVED -> 1\n", pkt->onuNum); 

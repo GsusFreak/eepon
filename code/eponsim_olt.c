@@ -56,7 +56,6 @@ void calc_avg_arrival(double *avgVal)
 void olt()
 {
   int transmitPkt;
-  long txPktCount = 0;
   double packet_transmission_time;
   sENTITY_PKT *currPkt, *tmpPkt;
   //int iaa;  // This is the number of the onu being serviced by the OLT
@@ -69,12 +68,9 @@ void olt()
   // Test Variables
   status_processes_print();
   
-  /* Upstream transmission gate functinnality of new OLT */
+  /* Upstream transmission gate functionality of new OLT */
   while(!terminateSim) /* permanent behavior of the new OLT process moel */
   {
-    /* Reset the loop variables */
-    txPktCount = 0;
-   
     /* Check for excessive buffer size */
     if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
     {
@@ -84,7 +80,9 @@ void olt()
     }
     
     transmitPkt = 1;
+    // Start with the first packet in the OLT queue
     currPkt = oltAttrs.packetsHead;
+    // Iterate through the OLT queue until the next packet is NULL
     while(transmitPkt)
     {
       if(currPkt == NULL)
@@ -93,34 +91,35 @@ void olt()
       }
       else
       {
+        // If the state of the destination ONU is active, send the packet
         if(onuAttrs[currPkt->onuNum].state == ONU_ST_ACTIVE)
         {
-          /* Copy packet to temporary data structure */
+          // Calculate the necessary transmission time
           packet_transmission_time = (currPkt->size)*simParams.TIME_PER_BYTE;
           
-          /* collect statistics on this packet */
+          // Record the queue length to the various (3?) queue length tables
           record_stats_queue_length(currPkt);
+
+          // Record transmission time & calculate delay
           record_packet_stats_dequeue(currPkt);
           
-          /* Incremement throughput statistics per ONU */
+          // Update ONU and OLT throughput statistics
           oltAttrs.transmitByteCnt += currPkt->size;
           onuAttrs[currPkt->onuNum].transmitByteCnt += currPkt->size;
           
-          /* Have the OLT process wait while it sends the packet */
+          // Have the OLT process wait while the packet is sent
           hold(packet_transmission_time);
 
-          /* Increment transmitted packet counter */
-          txPktCount++;
-    
-          /* Collect statistics on this packet */
-          // This function probably needs tweaking
+          // Record the arrival time of the packet in the appropriate table
           record_packet_stats_finish(currPkt);
 
-          /* Iterate to next packet */
+          // Create a pointer to the packet so that it can be destroyed
           tmpPkt = currPkt;
+
+          // Iterate to next packet 
           currPkt = currPkt->next;
-    
-          /* remove packet */
+          
+          // Remove packet 
           remove_packet(tmpPkt); 
         }
         else

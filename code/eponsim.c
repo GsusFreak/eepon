@@ -119,7 +119,7 @@ int TSprint(const char *text, ...)
   va_list args;
   int out;
   
-  TSstream = fopen("B_TS_Out", "a");
+  TSstream = fopen("B_TS_Out.txt", "a");
   va_start(args, text);
   out = vfprintf(TSstream, text, args);
   va_end(args);

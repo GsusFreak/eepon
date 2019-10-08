@@ -15,6 +15,7 @@ from glob import glob
 paramPrecision = 3
 paramList1 = [x * 0.001 for x in range(1,11)]
 livingProcesses = []
+namesOfLivingProcesses = []
 cntLivingProcesses = 0
 projectDirectories = []
 
@@ -36,13 +37,17 @@ def start_sim(files, ver, param1):
     global cntLivingProcesses
     global livingProcesses
     global resultDirectories
+    global namesOfLivingProcesses
     
     # Trap the process in a while loop if there are already enough 
     # processes running
     while cntLivingProcesses >= int(config['SETTINGS']['simultaneous processes']):
         for process in livingProcesses:
             if process.poll() != None:
+                indexProcess = livingProcesses.index(process) 
                 livingProcesses.remove(process)
+                processIDStr = namesOfLivingProcesses.pop(indexProcess)
+                print('Process Completed ({})'.format(processIDStr))
                 cntLivingProcesses -= 1
                 break
         time.sleep(0.01)
@@ -80,8 +85,10 @@ def start_sim(files, ver, param1):
     livingProcesses.append(subprocess.Popen([os.path.join(cwd,pathCode,'eponsim')+' > sim_log.txt'], cwd=newPath, shell=True))
     cntLivingProcesses += 1
     if ver == 1:
+        namesOfLivingProcesses.append(fileName)
         print("Process Launched ({})".format(fileName))
     if ver == 2:
+        namesOfLivingProcesses.append(fileName+'_'+formatString.format(param1))
         print("Process Launched ({})".format(fileName+'_'+formatString.format(param1)))
 
 def gather_results(runNum):
@@ -255,7 +262,10 @@ print('All Processes have Launched ({})'.format(runNum))
 while cntLivingProcesses > 0:
     for process in livingProcesses:
         if process.poll() != None:
+            indexProcess = livingProcesses.index(process) 
             livingProcesses.remove(process)
+            processIDStr = namesOfLivingProcesses.pop(indexProcess)
+            print('Process Completed ({})'.format(processIDStr))
             cntLivingProcesses -= 1
             break
     time.sleep(0.01)

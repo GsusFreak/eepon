@@ -172,14 +172,6 @@ void grantCycle()
         TSprint("iaa inside grantCycle() is %d (invalid value)", iaa);
         dump_sim_core();
       }
-      // If the time until transmission is longer than the wakeup time, put the ONU to sleep.
-      if(onuAttrs[onuNum].heavy_traffic_sleep_duration >= simParams.ONU_TIME_WAKEUP)
-      {
-        // Set the expected sleep duration for this ONU (minus the wakeup duration)
-        onuAttrs[onuNum].heavy_traffic_sleep_duration = queueSize*simParams.TIME_PER_BYTE - simParams.ONU_TIME_WAKEUP;
-        // If this ONU will sleep for longer than the wakeup time, then sleep.
-        set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
-      }
       simParams.ONU_GRANTED += 1;
       if(simParams.ONU_GRANTED == simParams.NUM_ONU)
         simParams.ONU_GRANTED = 0;
@@ -323,6 +315,26 @@ int get_ONU_queue_size(int onuNum)
     {
       queueSize += tmp->size;
     }
+    tmp = tmp->next;
+  }
+  return queueSize;
+}
+
+
+int get_queue_size_until_certain_ONU(int onuNum)
+{
+  if(onuNum > simParams.NUM_ONU || onuNum < 0)
+  {
+    TSprint("onuNum = %d was passed to get_ONU_queue_size", onuNum);
+    dump_sim_core();
+  }
+  sENTITY_PKT *tmp;
+  int queueSize = 0;
+  tmp = oltAttrs.packetsHead;
+  while(tmp != NULL)
+  {
+    if(tmp->onuNum == onuNum) break;
+    queueSize += tmp->size;
     tmp = tmp->next;
   }
   return queueSize;
