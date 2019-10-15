@@ -96,21 +96,14 @@ double currScheduleTime[20];
 double currScheduleTimeMax;
 double clockTime1, clockTime2;
 
-/*
- * Grant Trace Data Structures
- */
-sGRANT_TRC grantTrace[MAX_LAMBDAS][GRANT_TRACE_SIZE];
-int grantTracePtr[MAX_LAMBDAS];
 
 /* This array is used for ordering ONUs for scheduling in LFJ order or in wavelength assignment order */
-sONU_LIST *scheduleList[MAX_LAMBDAS];
-sONU_LIST *scheduleListLfjSpt[MAX_LAMBDAS];
-sONU_LIST *scheduleListLfjLpt[MAX_LAMBDAS];
+sONU_LIST *scheduleList;
 
-// Declare eponsim.c Troubleshooting Variables
-int   numRuns       = 1,
-      numLoadLevels = 9,
-      numONUs       = 32;
+//// Declare eponsim.c Troubleshooting Variables
+//int   numRuns       = 1,
+//      numLoadLevels = 9,
+//      numONUs       = 32;
 // FILE *traceFileDave;
 
 int TSprint(const char *text, ...)
@@ -136,8 +129,6 @@ int ONUprint(int ONUids, const char *text, ...)
   va_list args;
   int out;
   
-  int hello = 30;
-  hello += 10;
   va_start(args, text);
   out = vfprintf(ONU_files[ONUids], text, args);
   va_end(args);
@@ -146,6 +137,19 @@ int ONUprint(int ONUids, const char *text, ...)
   ONUids += 1;
   return 0;
 #endif
+}
+
+// Packet Delay Histogram (PDH)
+// This records the potential sleep time of each onu whenever a new packet is generated
+int PDHprint(const char *text, ...)
+{
+  va_list args;
+  int out;
+  
+  va_start(args, text);
+  out = vfprintf(PDHstream, text, args);
+  va_end(args);
+  return out;
 }
 
 
@@ -166,12 +170,12 @@ void test_var_print()
   fprintf(indicatorFile, "read_sim_cfg_file_finish = %.0f\n", test_vars.read_sim_cfg_file_finish);
   fprintf(indicatorFile, "\n");
   int iaa;
-  for (iaa = 0; iaa < numRuns; iaa++) {
+  for (iaa = 0; iaa < simParams.NUM_RUNS; iaa++) {
     fprintf(indicatorFile, "Run #%d\n", iaa + 1);
     fprintf(indicatorFile, "\n");
-    int ibb;
-    for (ibb = 0; ibb < numLoadLevels; ibb++) {
-      fprintf(indicatorFile, "Load #%d\n", ibb + 1);
+    int    ibb = 0;
+    for (double loadLevel = simParams.START_LOAD; loadLevel <= (simParams.END_LOAD + 0.0001); loadLevel += simParams.LOAD_INCR) {
+      fprintf(indicatorFile, "Load #%0.2f\n", loadLevel);
       fprintf(indicatorFile, "sim_time        = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
       fprintf(indicatorFile, "main_begin_load = %.0f\n", test_vars.main_begin_load[iaa][ibb]);
       fprintf(indicatorFile, "main_end_load   = %.0f\n", test_vars.main_end_load[iaa][ibb]);
@@ -186,7 +190,7 @@ void test_var_print()
         fprintf(indicatorFile, "sim_finish = %.0f\n", test_vars.sim_finish[iaa][ibb][icc]);
         fprintf(indicatorFile, "\n");
       }
-      for (icc = 0; icc < numONUs; icc++) {
+      for (icc = 0; icc < simParams.NUM_ONU; icc++) {
         fprintf(indicatorFile, "ONU  #%02d: ", icc+1);
         fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created[iaa][ibb][icc]);
         fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed[iaa][ibb][icc]);
@@ -197,18 +201,20 @@ void test_var_print()
       fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed_olt[iaa][ibb]);
       fprintf(indicatorFile, "sim_time = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
       fprintf(indicatorFile, "\n");
+      ibb++;
     }
     fprintf(indicatorFile, "\n\n");
   }
 
   // Print a summary of the interesting information at the bottom
-  for (iaa = 0; iaa < numRuns; iaa++) {
+  for (iaa = 0; iaa < simParams.NUM_RUNS; iaa++) {
     fprintf(indicatorFile, "-- Run #%d --", iaa + 1);
     fprintf(indicatorFile, "\n");
-    int ibb;
-    for (ibb = 0; ibb < numLoadLevels; ibb++) {
-      fprintf(indicatorFile, "Load #%d - ", ibb + 1);
+    int ibb = 0;
+    for (double loadLevel = simParams.START_LOAD; loadLevel <= (simParams.END_LOAD + 0.0001); loadLevel += simParams.LOAD_INCR) {
+      fprintf(indicatorFile, "Load #%0.2f - ", loadLevel);
       fprintf(indicatorFile, "sim_time = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
+      ibb++;
     }
   }
   fprintf(indicatorFile, "\n\n");
@@ -298,19 +304,18 @@ void open_TS_pointers() {
     ONU_file_name[0] = 0;
   }
 #endif
+  PDHstream = fopen("PDH.txt", "a");
   return;
 }
 
 void close_TS_pointers() {
-//#ifdef EnableTroubleshooting_v2
-  //fclose(TSstream);
-//#endif
 #ifdef EnableTroubleshooting_v4
   int ONUid;
   for (ONUid = 0; ONUid < 32; ONUid++) {
     fclose(ONU_files[ONUid]);
   }
 #endif
+  fclose(PDHstream);
   return;
 }
 
@@ -332,12 +337,12 @@ void calc_sim_params()
   int loopIndex;
 
   /* parameters calculated from specified parameters */
-  simParams.NUM_PARTS     = (simParams.NUM_ONU - simParams.NUM_HEAVY_ONU) + (simParams.NUM_HEAVY_ONU*simParams.HEAVY_LOAD);
-  simParams.LINK_SPEED_PER_PART   = (simParams.LINK_SPEED*simParams.DESIRED_LOAD)/((double)simParams.NUM_PARTS);  /* in bps */
+  simParams.NUM_PARTS = (simParams.NUM_ONU - simParams.NUM_HEAVY_ONU) + (simParams.NUM_HEAVY_ONU*simParams.HEAVY_LOAD);
+  simParams.LINK_SPEED_PER_PART = (simParams.LINK_SPEED*simParams.DESIRED_LOAD)/((double)simParams.NUM_PARTS);  /* in bps */
   simParams.AVG_PKT_INTER_ARVL_TIME = (double)((AVG_PKT_SIZE+PREAMBLE_IPG_BYTES)*8)/simParams.LINK_SPEED_PER_PART;
   simParams.AVG_PKT_INTER_ARVL_TIME_HEAVY = (double)((AVG_PKT_SIZE+PREAMBLE_IPG_BYTES)*8)/(simParams.LINK_SPEED_PER_PART*simParams.HEAVY_LOAD);
-  simParams.TIME_PER_BYTE     = (8)/simParams.LINK_SPEED; /* at 1 Mbps link speed, byte time is 8 microseconds */
-  simParams.PREAMBLE_IPG_TIME   = PREAMBLE_IPG_BYTES*simParams.TIME_PER_BYTE;
+  simParams.TIME_PER_BYTE = (8)/simParams.LINK_SPEED; /* at 1 Mbps link speed, byte time is 8 microseconds */
+  simParams.PREAMBLE_IPG_TIME = PREAMBLE_IPG_BYTES*simParams.TIME_PER_BYTE;
   
   /* 
    * Self-Similar parameters 
@@ -1368,8 +1373,9 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *lbFile;
   FILE *srFile;
   FILE *srmxFile;
-  FILE *tpoFile[MAX_ONU];
   FILE *tfsFile, *tfFile;
+  FILE *tpoFile[MAX_ONU];
+  FILE *tpoFile2;
   FILE *cr1File, *cr2File, *mcrFile;
   FILE *odHistFile, *gspHistFile;
   FILE *pdFile, *plFile, *clpFile;
@@ -1549,6 +1555,9 @@ void write_sim_data(int runNumber, double trafficLoad)
     sprintf(filename_str, "tpo%d.txt", loopIndex+1);
     tpoFile[loopIndex] = fopen(filename_str,"a");
   }
+  filename_str[0] = '\0';
+  sprintf(filename_str, "tpo.txt");
+  tpoFile2 = fopen(filename_str,"a");
   /* Open files for throughput fairness */
   filename_str[0] = '\0';
   sprintf(filename_str, "tfs.txt");
@@ -1592,7 +1601,7 @@ void write_sim_data(int runNumber, double trafficLoad)
     double timeActive = 0, timeIdle = 0, timeProbe = 0, timeSleep = 0, timeWakeup = 0;
     double pwrActive = 0, pwrIdle = 0, pwrProbe = 0, pwrSleep = 0, pwrWakeup = 0, pwrAvg = 0;
     double pctActive = 0, pctIdle = 0, pctProbe = 0, pctSleep = 0, pctWakeup = 0;
-    int    cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0, cntWakeup = 0;
+    double cntActive = 0, cntIdle = 0, cntProbe = 0, cntSleep = 0, cntWakeup = 0;
     for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
       // Please see the emun eONU_STATE in eponsim.h to find the
@@ -1640,7 +1649,7 @@ void write_sim_data(int runNumber, double trafficLoad)
     //}
     //fprintf(tpcFile, "\n");
     fprintf(ppcFile, "%f %f %f %f %f %f\n", trafficLoad, pctActive, pctIdle, pctSleep, pctProbe, pctWakeup);
-    fprintf(cpcFile, "%f %d %d %d %d %d\n", trafficLoad, cntActive, cntIdle, cntSleep, cntProbe, cntWakeup);
+    fprintf(cpcFile, "%f %f %f %f %f %f\n", trafficLoad, cntActive, cntIdle, cntSleep, cntProbe, cntWakeup);
     fprintf(pcFile, "%f %f %f %f %f %f %f\n", trafficLoad, pwrAvg, pwrActive, pwrIdle, pwrSleep, pwrProbe, pwrWakeup);
   }
   if((simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) /*&& (simParams.OLT_TYPE != OLT_APS)*/)
@@ -1705,7 +1714,9 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(tpoFile[loopIndex],"%f %f %f %f\n", trafficLoad, table_mean(onuAttrs[loopIndex].transmitThroughput),table_min(onuAttrs[loopIndex].transmitThroughput),table_max(onuAttrs[loopIndex].transmitThroughput));
     actual_tput[loopIndex] = table_mean(onuAttrs[loopIndex].transmitThroughput);
   }
-
+  fprintf(tpoFile2,"%f %f %f %f\n", trafficLoad, table_mean(oltAttrs.transmitThroughput),table_min(oltAttrs.transmitThroughput),table_max(oltAttrs.transmitThroughput));
+  
+  
   /* Record throughput fairness from the fairness samples */
   fprintf(tfsFile,"%f %g %g %g\n", trafficLoad, table_mean(throughputFairness),table_min(throughputFairness), table_max(throughputFairness));
 
@@ -1720,6 +1731,8 @@ void write_sim_data(int runNumber, double trafficLoad)
 
   /* Close files for reporting ONU throughput */
   for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++) fclose(tpoFile[loopIndex]);
+
+  fclose(tpoFile2);
   
   fclose(odoFile);
   fclose(odFile);
@@ -1841,7 +1854,7 @@ int main()
       // Test Variables main_begin_load
       test_vars.main_begin_load[test_vars.runNum][test_vars.loadOrderCounter]++;
       test_var_print();
-      TSprint("main_begin_load\t\t\trunNum: %d\t\tutilization: %.1f\n", test_vars.runNum + 1, 0.1*(test_vars.loadOrderCounter + 1));
+      TSprint("main_begin_load\t\t\trunNum: %d\t\tutilization: %.1f\n", test_vars.runNum + 1, trafficLoad);
     
       sim_aborted = 0;
       printf("LOAD = %f\n", trafficLoad);

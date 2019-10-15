@@ -249,12 +249,13 @@ void reset_throughput_counters()
 void onu_throughput_calc()
 {
   int loopIndex;
-  float const poll_rate = 0.1; //times per second
+  float const poll_rate = 1000; //times per second
   create("ONU Throughput Calculator");
 
   while(!terminateSim)
   {
     hold(1/poll_rate);
+    // Calculate the throughput for the OLT and ONUs for the last polling cycle
     if (reset_throughput_flag == 0)
     {
       for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
@@ -273,6 +274,7 @@ void onu_throughput_calc()
     {
       reset_throughput_flag = 0;
     }
+    // Reset the transmitByteCnt variables for OLT and ONUs
     for(loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
     {
       onuAttrs[loopIndex].transmitByteCnt = 0;

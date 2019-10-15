@@ -50,8 +50,9 @@ double      maximumGrantCycle;
 #define FATAL_CAUSE_LENGTH_VIDEO_BUFFER_OVR   20
 #define FATAL_CAUSE_LENGTH_DATA_BUFFER_OVR    21
 
-#define MAX_ONU   64
-#define MAX_LAMBDAS 64
+#define MAX_ONU      64
+#define MAX_NUM_RUN  40
+#define MAX_NUM_LOAD 4
 
 /* Maximum size of trace capability */
 #define MAX_TRACE_VALUES    1500
@@ -76,96 +77,13 @@ double      maximumGrantCycle;
 #define NOT_SERVICED  0
 #define SERVICED  1
 
-/* Grant Trace definitions */
-#define GRANT_TRACE_OFF 0
-#define GRANT_TRACE_ON  1
-#define GRANT_TRACE_SIZE    1000
-
 /* Get Tail definitions */
 #define GET_TAIL_OFF  0
 #define GET_TAIL_ON     1
 
-/* OLT Type definitions */
-#define OLT_IPACT           0
-#define OLT_WDM_IPACT             1
-#define OLT_LEAST_ASSIGNED            2
-#define OLT_APS             3
-#define OLT_LFJ             4
-#define OLT_LFJ_LPT           7
-#define OLT_LFJ_SPT           8
-#define OLT_WBM                         9
-#define OLT_ONLINE_NASC             5
-#define OLT_ONLINE_INTERVAL_LFJ_LPT   6
-#define OLT_ONLINE_INTERVAL_LFJ_SPT   10
-#define OLT_ONLINE_INTERVAL_WBM     11
-#define OLT_ONLINE_JIT_LFJ_LPT          12
-#define OLT_ONLINE_JIT_LFJ_SPT          13
-#define OLT_ONLINE_JIT_WBM        14
-#define OLT_ONLINE_JIT_LFJ_LNF          15
-#define OLT_ONLINE_JIT_WBM_LPT          16
-#define OLT_ONLINE_JIT_WBM_LNF          17
-#define OLT_ONLINE_INTERVAL_LFJ_LNF   18
-#define OLT_ONLINE_INTERVAL_WBM_LPT   19
-#define OLT_ONLINE_INTERVAL_WBM_LNF   20
-#define OLT_EAF                         21
-#define OLT_EAAF                        22
-#define OLT_ONLINE_INTERVAL_EAF         23
-#define OLT_ONLINE_INTERVAL_EAAF        24
-#define OLT_ONLINE_JIT_EAF              25
-#define OLT_ONLINE_JIT_EAAF             26
-#define OLT_ONLINE_JIT_WBM_EAAF         27
-#define OLT_ONLINE_INTERVAL_WBM_EAAF    28
-#define OLT_ONLINE_JIT_TEST             30
-#define OLT_LFJ_LNF                     31
-#define OLT_WBM_LPT                     32
-#define OLT_WBM_LNF                     33
-#define OLT_WBM_EAAF                    34
-#define OLT_SPD                         40
-#define OLT_LPD                         41
-#define OLT_SPD_LPT                     42
-#define OLT_ONLINE_JIT_SPD              43
-#define OLT_ONLINE_JIT_LPD              44
-#define OLT_IPACT_PSF         45
-
-/* DBA Type definitions */
-#define DBA_FIXED       0
-#define DBA_LIMITED_GATE    1
-#define DBA_LIMITED_CYCLE   2
-#define DBA_GATED       3
-#define DBA_CONSTANT_CREDIT   4
-#define DBA_LINEAR_CREDIT   5
-#define DBA_ELASTIC       6
-#define DBA_EXCESS          7
-
-/* Video DBA Type definitions */
-
-#define VIDEO_DBA_FIXED       0
-#define VIDEO_DBA_LIMITED_GATE    1
-#define VIDEO_DBA_GATED       2
-
 /* Traffic Type definitions */
 #define TRAFFIC_POISSON       0
 #define TRAFFIC_SELF_SIMILAR    1
-
-/* Video Traffic Flag Values */
-#define VIDEO_TRAFFIC_OFF   0
-#define VIDEO_TRAFFIC_ON    1
-#define VIDEO_PREDICTION_OFF  0
-#define VIDEO_PREDICTION_ON   1
-
-#define SCALABLE_VIDEO_OFF    0
-#define SCALABLE_VIDEO_ON   1
-#define SCALABLE_VIDEO_DROPPING_OFF     0
-#define SCALABLE_VIDEO_DROPPING_THRESHOLD 1
-#define SCALABLE_VIDEO_DROPPING_DYNAMIC   2
-#define SCALABLE_VIDEO_DROPPING_LINEAR_THRESHOLD  3
-#define SCALABLE_VIDEO_DROPPING_CFDL_MFAC     4
-#define SCALABLE_VIDEO_DROPPING_EXP_THRESHOLD   5
-
-/* WDM Type definitions */
-#define WDM_NONE  0
-#define WDM_FIXED 1
-#define WDM_TUNABLE 2
 
 #define AVG_PKT_SIZE  493.7
 
@@ -440,11 +358,6 @@ extern int fatalErrorCode;
 extern char sim_msg_buf[10000];
 extern char dump_msg_buf[1000];
 
-/*
- * Grant Trace Data Structures
- */
-extern sGRANT_TRC grantTrace[MAX_LAMBDAS][GRANT_TRACE_SIZE];
-extern int grantTracePtr[MAX_LAMBDAS];
 
 /* Empirical Packet Size Distribution */
 #define EMPIRICAL_SIZE  4
@@ -495,9 +408,7 @@ extern TABLE    throughputFairness;
 
 /* Structures used for sorting ONUs */
 /* This array is used for ordering ONUs for scheduling in LFJ order or in wavelength assignment order */
-extern sONU_LIST *scheduleList[MAX_LAMBDAS];
-extern sONU_LIST *scheduleListLfjSpt[MAX_LAMBDAS];
-extern sONU_LIST *scheduleListLfjLpt[MAX_LAMBDAS];
+extern sONU_LIST *scheduleList;
 
 /* Scheduling Pool structure array */
 extern      sSCHED_POOL schedPool[MAX_ONU];
@@ -533,22 +444,22 @@ typedef struct
           read_sim_cfg_file_finish,
           heartbeat_process,
           // That's [run# (probably only 1)][load level (probably 0.1 to 0.9)][PilotRun == 0, ActualRun == 1]
-          main_test[10][20],
-          main_begin_load[10][20],
-          main_end_load[10][20],
-          sim_time_per_load[10][20],
-          sim_time_per_load_start[10][20],
-          sim_start[10][20][2],
-          sim_process[10][20][2],
-          sim_before_ONU_processes[10][20][2],
-          sim_finish[10][20][2],
-          sim_finish2[10][20][2],
-          sim_ctrl_simType[10][20][2],
-          sim_ctrl_testProbe[10][20][2],
-          data_pkt_created[10][20][64],
-          data_pkt_destroyed[10][20][64],
-          data_pkt_created_olt[10][20],
-          data_pkt_destroyed_olt[10][20];
+          main_test[MAX_NUM_RUN][MAX_NUM_LOAD],
+          main_begin_load[MAX_NUM_RUN][MAX_NUM_LOAD],
+          main_end_load[MAX_NUM_RUN][MAX_NUM_LOAD],
+          sim_time_per_load[MAX_NUM_RUN][MAX_NUM_LOAD],
+          sim_time_per_load_start[MAX_NUM_RUN][MAX_NUM_LOAD],
+          sim_start[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          sim_process[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          sim_before_ONU_processes[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          sim_finish[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          sim_finish2[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          sim_ctrl_simType[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          sim_ctrl_testProbe[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          data_pkt_created[MAX_NUM_RUN][MAX_NUM_LOAD][MAX_ONU],
+          data_pkt_destroyed[MAX_NUM_RUN][MAX_NUM_LOAD][MAX_ONU],
+          data_pkt_created_olt[MAX_NUM_RUN][MAX_NUM_LOAD],
+          data_pkt_destroyed_olt[MAX_NUM_RUN][MAX_NUM_LOAD];
   int     loadOrderCounter,
           runNum;
 } sIndicators;
@@ -568,6 +479,8 @@ FILE  *status_processes_temp1;
 #ifdef  EnableTroubleshooting_v4
 FILE  *ONU_files[32];
 #endif
+
+FILE  *PDHstream;
 
 FILE  *droppedScalPackets;
 
@@ -592,6 +505,7 @@ void set_trace_file(FILE* f);
 void set_output_file(FILE* f);
 void status_processes(void);
 int  TSprint(const char*, ...);
+int  PDHprint(const char*, ...);
 int  ONUprint(int, const char*, ...);
 
 /*----------------End David's Troubleshooting----------------*/

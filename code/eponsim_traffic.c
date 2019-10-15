@@ -56,6 +56,10 @@ void assign_packet(sENTITY_PKT *pkt)
     // the WAKEUP time is subtracted from the queue time)
     if(onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration >= 0)
     {
+      // Only use the PDHprint command with short simulations
+      // Otherwise, huge files can be generated
+      if(pkt->onuNum == 0 && simParams.simType == ACTUAL_RUN)
+        PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
       set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[pkt->onuNum]);
     }
     

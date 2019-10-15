@@ -114,15 +114,15 @@ void onu_prop_delay_distr(int runNumber)
     /* Place ONU into sorted list, only first run */
     if(runNumber == 0)
     {
-      scheduleList[0] = onu_list_insert(SORT_ASCENDING_ORDER,SORT_ASCENDING_ORDER,SORT_PROP_DELAY,SORT_ONU_NUM,&onuListItem,scheduleList[0]);
+      scheduleList = onu_list_insert(SORT_ASCENDING_ORDER,SORT_ASCENDING_ORDER,SORT_PROP_DELAY,SORT_ONU_NUM,&onuListItem,scheduleList);
     }
   }
   /* Only print propagation delays in SPD order for first run */
   if(runNumber == 0)
   {
-    while(scheduleList[0] != NULL)
+    while(scheduleList != NULL)
     {
-      scheduleList[0] = onu_list_pop(scheduleList[0],&onuListItem);
+      scheduleList = onu_list_pop(scheduleList,&onuListItem);
       fprintf(propFile, "%g, ",onuListItem.latency);
     }
     fprintf(propFile,"\n");
