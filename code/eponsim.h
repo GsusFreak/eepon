@@ -209,6 +209,8 @@ typedef struct
   double    ACTUAL_MAX_PROP_DELAY;
   double    ACTUAL_MIN_PROP_DELAY;
   double    ONU_PROP[MAX_ONU];    /* ONU to OLT propagation delay values */
+  int       ONUTrafficScalar[MAX_ONU];
+  int       ONUTrafficScalar_length;
 } sSIM_PARAMS;
 
 /* Packet entity data structure */
@@ -414,6 +416,8 @@ extern sONU_LIST *scheduleList;
 extern      sSCHED_POOL schedPool[MAX_ONU];
 extern int  schedPoolCount;
 
+/* Array of weights for changing the traffic loads between ONUs */
+//extern int  ONUTrafficScalar[MAX_ONU];
 
 /*
  * Function declarations

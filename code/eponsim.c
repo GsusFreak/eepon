@@ -96,6 +96,8 @@ double currScheduleTime[20];
 double currScheduleTimeMax;
 double clockTime1, clockTime2;
 
+/* Array of weights for changing the traffic loads between ONUs */
+//int ONUTrafficScalar[MAX_ONU];
 
 /* This array is used for ordering ONUs for scheduling in LFJ order or in wavelength assignment order */
 sONU_LIST *scheduleList;
@@ -1032,7 +1034,9 @@ void read_sim_cfg_file()
   
   FILE *cfgFile;
   char currToken[200];
-    
+  int  currTokenInt;
+  simParams.ONUTrafficScalar_length = 0;
+
   /* set defaults */
   simParams.TRAFFIC_TYPE    = TRAFFIC_POISSON;  /* Traffic Type */
   simParams.TUNING_TIME     = 5e-3;
@@ -1101,7 +1105,7 @@ void read_sim_cfg_file()
   {
     while((fscanf(cfgFile, "%s", currToken)) != EOF)
     {
-      //printf("currToken = %s, ", currToken);
+      //TSprint("token debug = %s\n", currToken);
       if(strcmp(currToken, "TRAFFIC_TYPE") == 0)
       {
         currToken[0] = '\0';
@@ -1119,6 +1123,16 @@ void read_sim_cfg_file()
       {
         fscanf(cfgFile, "%s", currToken);
         simParams.ONU_TIME_SLEEP = atof(currToken);
+      }
+      else if(strcmp(currToken, "ONU_TRAFFIC_SCALAR") == 0)
+      {
+        while((fscanf(cfgFile, "%d", &currTokenInt)) != 0)
+        {
+          simParams.ONUTrafficScalar[simParams.ONUTrafficScalar_length] = currTokenInt;
+          TSprint("onu_traffic_scalar[%d] = %d\n", simParams.ONUTrafficScalar_length, simParams.ONUTrafficScalar[simParams.ONUTrafficScalar_length]);
+          simParams.ONUTrafficScalar_length = simParams.ONUTrafficScalar_length + 1;
+        }
+        TSprint("onu_traffic_scalar LENGTH = %d\n", simParams.ONUTrafficScalar_length);
       }
       else if(strcmp(currToken, "ONU_TIME_TRIGGER") == 0)
       {
