@@ -13,7 +13,8 @@ from glob import glob
 #increment = 50
 #paramList1 = [*range(lowerBound, upperBound+1, increment)]
 paramPrecision = 3
-paramList1 = [x * 0.001 for x in range(1,11)]
+#paramList1 = [x * 0.001 for x in range(1,11)]
+paramList1 = [x * 200 for x in range(1,11)]
 livingProcesses = []
 namesOfLivingProcesses = []
 cntLivingProcesses = 0

@@ -343,7 +343,7 @@ void calc_sim_params()
   simParams.AVG_PKT_INTER_ARVL_TIME_HEAVY = (double)((AVG_PKT_SIZE+PREAMBLE_IPG_BYTES)*8)/(simParams.LINK_SPEED_PER_PART*simParams.HEAVY_LOAD);
   simParams.TIME_PER_BYTE = (8)/simParams.LINK_SPEED; /* at 1 Mbps link speed, byte time is 8 microseconds */
   simParams.PREAMBLE_IPG_TIME = PREAMBLE_IPG_BYTES*simParams.TIME_PER_BYTE;
-  
+  TSprint("avg_pkt_inter_arvl_time = %.9f\n", simParams.AVG_PKT_INTER_ARVL_TIME); 
   /* 
    * Self-Similar parameters 
    */
@@ -1039,7 +1039,7 @@ void read_sim_cfg_file()
   simParams.SIM_TIME        = 300;
   simParams.NUM_RUNS        = 1;
   simParams.NUM_ONU         = 32;     /* Number of ONUs on PON */
-  simParams.NUM_HEAVY_ONU   = 5;      /* Number of heavily loaded ONUs */
+  simParams.NUM_HEAVY_ONU   = 0;      /* Number of heavily loaded ONUs */
   simParams.LINK_SPEED      = 10e9;   /* link speed in bps */
   
   simParams.HEAVY_LOAD      = 2;      /* heavy load multiple */
