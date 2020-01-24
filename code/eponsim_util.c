@@ -325,7 +325,7 @@ int get_queue_size_until_certain_ONU(int onuNum)
 {
   if(onuNum > simParams.NUM_ONU || onuNum < 0)
   {
-    TSprint("onuNum = %d was passed to get_ONU_queue_size", onuNum);
+    TSprint("ERROR: onuNum = %d was passed to get_ONU_queue_size", onuNum);
     dump_sim_core();
   }
   sENTITY_PKT *tmp;
@@ -335,6 +335,7 @@ int get_queue_size_until_certain_ONU(int onuNum)
   {
     if(tmp->onuNum == onuNum) break;
     queueSize += tmp->size;
+    //queueSize += 1;
     tmp = tmp->next;
   }
   return queueSize;
@@ -344,14 +345,12 @@ int get_OLT_queue_size()
 {
   sENTITY_PKT *tmp;
   int queueSize = 0;
-  for(int onuNum = 0; onuNum < simParams.NUM_ONU; onuNum++)
+  tmp = oltAttrs.packetsHead;
+  while(tmp != NULL)
   {
-    tmp = oltAttrs.packetsHead;
-    while(tmp != NULL)
-    {
-      queueSize += tmp->size;
-      tmp = tmp->next;
-    }
+    queueSize += tmp->size;
+    //queueSize += 1;
+    tmp = tmp->next;
   }
   return queueSize;
 }

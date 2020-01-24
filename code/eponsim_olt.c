@@ -58,6 +58,7 @@ void olt()
   int transmitPkt;
   double packet_transmission_time;
   sENTITY_PKT *currPkt, *tmpPkt;
+  int currPktONUNum = 0;
   //int iaa;  // This is the number of the onu being serviced by the OLT
 
   /* Initialize the process */
@@ -75,6 +76,7 @@ void olt()
     if(oltAttrs.packetQueueSize > MAX_PKT_BUF_SIZE)
     {
       fatalErrorCode = FATAL_CAUSE_BUFFER_OVR;
+      TSprint("ERROR: FATAL_CAUSE_BUFFER_OVR\n");
       dump_sim_core();
       transmitPkt = 0;
     }
@@ -85,6 +87,8 @@ void olt()
     // Iterate through the OLT queue until the next packet is NULL
     while(transmitPkt)
     {
+      //if(simParams.simType == PILOT_RUN)
+      //  TSprint("pilot run OLT cycle start\n");
       if(currPkt == NULL)
       {
         transmitPkt = 0;
@@ -94,6 +98,8 @@ void olt()
         // If the state of the destination ONU is active, send the packet
         if(onuAttrs[currPkt->onuNum].state == ONU_ST_ACTIVE)
         {
+          //if(simParams.simType == PILOT_RUN)
+          //  TSprint("sim_time = %.9f\n", simtime());
           // Calculate the necessary transmission time
           packet_transmission_time = (currPkt->size)*simParams.TIME_PER_BYTE;
           
@@ -113,6 +119,19 @@ void olt()
           // Record the arrival time of the packet in the appropriate table
           record_packet_stats_finish(currPkt);
 
+          
+          // Re-enable tracking of the queue for this ONU since the packeting preventing
+          // this from increasing was just serviced
+          onuAttrs[currPkt->onuNum].disableQueueTracking = 0;
+
+          // Take this packet out of the queue size of all ONUs
+          for (int iaa = 0; iaa < simParams.NUM_ONU; iaa ++)
+          {
+            onuAttrs[iaa].queuesize -= currPkt->size;
+          }
+          currPktONUNum = currPkt->onuNum;
+
+
           // Create a pointer to the packet so that it can be destroyed
           tmpPkt = currPkt;
 
@@ -121,6 +140,34 @@ void olt()
           
           // Remove packet 
           remove_packet(tmpPkt); 
+          
+
+          // Reset the ONU queue size for this ONU since none
+          // of the packets that arrived after the packet that 
+          // was just serviced have been counted
+          onuAttrs[currPktONUNum].queuesize = get_queue_size_until_certain_ONU(currPktONUNum);
+
+          // Calculate the potential sleep time for this ONU
+          double timeUntilONUsNextPacket = onuAttrs[currPktONUNum].queuesize * simParams.TIME_PER_BYTE;
+          double timeForWholeQueue = oltAttrs.packetQueueSize * simParams.TIME_PER_BYTE;
+          onuAttrs[currPktONUNum].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+          // If sleep time is > 0, sleep. (The sleep time can be less than zero since
+          // the WAKEUP time is subtracted from the queue time)
+
+          if(onuAttrs[currPktONUNum].heavy_traffic_sleep_duration >= 0)
+          {
+            // Only use the PDHprint command with short simulations
+            // Otherwise, huge files can be generated
+            if(simParams.simType == ACTUAL_RUN)
+            //if(timeUntilONUsNextPacket > simParams.ONU_TIME_WAKEUP && simParams.simType == ACTUAL_RUN && table_cnt(overallQueueDelay) <= 10000)
+              PDHprint("ONU %d, Load %0.1f, Sleep Duration %e, Queue Depth %e\n", currPktONUNum, simParams.DESIRED_LOAD, timeUntilONUsNextPacket, timeForWholeQueue); 
+          
+            // Only use the PDHprint command with short simulations
+            // Otherwise, huge files can be generated
+            //if(simParams.simType == ACTUAL_RUN)
+            //  PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
+            set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[currPktONUNum]);
+          }
         }
         else
         {

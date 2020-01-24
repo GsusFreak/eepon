@@ -14,7 +14,16 @@ from glob import glob
 #paramList1 = [*range(lowerBound, upperBound+1, increment)]
 paramPrecision = 3
 #paramList1 = [x * 0.001 for x in range(1,11)]
-paramList1 = [x * 200 for x in range(1,11)]
+#paramList1 = [x * 200 for x in range(1,11)]
+#paramList1 = [x for x in range(1,21)]
+#paramList1 = [x for x in range(1,3)]
+paramList1 = [10, 50, 100, 250, 1000] 
+paramList1b = ['1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10', 
+        '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50 50',
+        '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100 100',
+        '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 250 250 250 250 250 250 250 250 250 250 250 250 250 250 250 250',
+        '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000 1000',
+        ]
 livingProcesses = []
 namesOfLivingProcesses = []
 cntLivingProcesses = 0
@@ -34,11 +43,21 @@ def write_config(config):
     with open('config.ini', 'w') as configfile:
         config.write(configfile)
 
+def update_rand_seed(config, randSeed):
+    # Turn the string into an integer, increment it, and then turn it back into
+    # a string with three spaces worth of left-hand zero padding (eg. 007)
+    #runNum = str(int(config['SETTINGS']['run number']) + 1).zfill(3)
+    # Update the config file with the new run number
+    config.set('SETTINGS', 'rand seed', str(randSeed))
+    with open('config.ini', 'w') as configfile:
+        config.write(configfile)
+
 def start_sim(files, ver, param1):
     global cntLivingProcesses
     global livingProcesses
     global resultDirectories
     global namesOfLivingProcesses
+    global randSeed
     
     # Trap the process in a while loop if there are already enough 
     # processes running
@@ -71,10 +90,18 @@ def start_sim(files, ver, param1):
     # Copy (and Format, if ver == 2) the sim_cfg file to the new dir
     with open(os.path.join(cwd,pathProfiles,files)) as f: 
         profileString = f.read()
+    if ver == 1:
+        profileString = profileString.format(randSeed)
     if ver == 2:
-        profileString = profileString.format(param1)
+        paramListIndex = paramList1.index(param1)         
+        param1b = paramList1b[paramListIndex] 
+        #profileString = profileString.format(randSeed, param1)
+        profileString = profileString.format(randSeed, param1b)
     with open(os.path.join(newPath,"sim_cfg"),'w') as f:
         f.write(profileString)
+
+    # Increment the random number generator seed for the next simulation
+    randSeed += 1
 
     # Create a pid file which the c program will edit later
     pid_file = open(os.path.join(newPath,'pid'), 'w')
@@ -207,6 +234,7 @@ runNum = config['SETTINGS']['run number']
 pathCode = config['SETTINGS']['program path']
 pathProfiles = config['SETTINGS']['profile path']
 pathResults = config['SETTINGS']['results path']
+randSeed = int(config['SETTINGS']['rand seed'])
 
 # List the files to be copied
 #filesToBeCopied = ['ppc.txt']
@@ -272,6 +300,8 @@ while cntLivingProcesses > 0:
     time.sleep(0.01)
 
 print('All Processes have Finished ({})'.format(runNum))
+
+update_rand_seed(config, randSeed)
 
 gather_results(runNum)
 

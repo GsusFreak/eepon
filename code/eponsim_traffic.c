@@ -47,20 +47,48 @@ void assign_packet(sENTITY_PKT *pkt)
     /* Add this packet to the queue packet count */
     oltAttrs.packetQueueNum++;
 
-    
-    // Every time a packet is added, check to see if this ONU can be put to sleep
-    // Calculate the potential sleep time for this ONU
-    double timeUntilONUsNextPacket = get_queue_size_until_certain_ONU(pkt->onuNum) * simParams.TIME_PER_BYTE;
-    onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
-    // If sleep time is > 0, sleep. (The sleep time can be less than zero since
-    // the WAKEUP time is subtracted from the queue time)
-    if(onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration >= 0)
+
+    // Make it so no other packets are added to the queue size of the current ONU
+    // Disable this ONU
+    onuAttrs[pkt->onuNum].disableQueueTracking = 1;
+
+    // Add this packet to the queue size of all enabled queues (which does not include the current one)
+    for (int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
     {
-      // Only use the PDHprint command with short simulations
-      // Otherwise, huge files can be generated
-      if(pkt->onuNum == 0 && simParams.simType == ACTUAL_RUN)
-        PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
-      set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[pkt->onuNum]);
+      if(onuAttrs[iaa].disableQueueTracking == 0)
+      {
+        onuAttrs[iaa].queuesize += pkt->size;
+      }
+    }
+
+
+    // Every time a packet is added, check to see if any of the ONUs can be put to sleep
+    for (int iaa = 0; iaa < simParams.NUM_ONU; iaa++) 
+    {
+      if(onuAttrs[iaa].state == ONU_ST_ACTIVE && onuAttrs[iaa].disableQueueTracking == 0)
+      {
+        // Calculate the potential sleep time for this ONU
+        double timeUntilONUsNextPacket = onuAttrs[iaa].queuesize * simParams.TIME_PER_BYTE;
+        double timeForWholeQueue = oltAttrs.packetQueueSize * simParams.TIME_PER_BYTE;
+        onuAttrs[iaa].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+        // If sleep time is > 0, sleep. (The sleep time can be less than zero since
+        // the WAKEUP time is subtracted from the queue time)
+
+        if(onuAttrs[iaa].heavy_traffic_sleep_duration >= 0)
+        {
+          // Only use the PDHprint command with short simulations
+          // Otherwise, huge files can be generated
+          if(simParams.simType == ACTUAL_RUN)
+          //if(timeUntilONUsNextPacket > simParams.ONU_TIME_WAKEUP && simParams.simType == ACTUAL_RUN && table_cnt(overallQueueDelay) <= 10000)
+            PDHprint("ONU %d, Load %0.1f, Sleep Duration %e, Queue Depth %e\n", iaa, simParams.DESIRED_LOAD, timeUntilONUsNextPacket, timeForWholeQueue); 
+        
+          // Only use the PDHprint command with short simulations
+          // Otherwise, huge files can be generated
+          //if(simParams.simType == ACTUAL_RUN)
+          //  PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
+          set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[iaa]);
+        }
+      }
     }
     
     
@@ -93,7 +121,7 @@ void traffic_src_poisson(int onuNum)
   while(!terminateSim)
   {
     /* Generate packets according to a particular distribution */
-    hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME));
+    hold(stream_exponential(oltAttrs.pktInterArrivalStream, simParams.AVG_PKT_INTER_ARVL_TIME_ONU[onuNum]));
     pktSize = (int)stream_empirical(oltAttrs.pktSizeStream, EMPIRICAL_SIZE, EMPIRICAL_CUTOFF, EMPIRICAL_ALIAS, EMPIRICAL_VALUE);
     pktPtr = create_a_packet(pktSize, onuNum);
     assign_packet(pktPtr);

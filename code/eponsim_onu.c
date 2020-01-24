@@ -14,6 +14,8 @@ void journal(int onuNum)
   switch(onuAttrs[onuNum].state)
   {
     case ONU_ST_ACTIVE:
+
+
       wait(ONU_HAS_NO_QUEUED_PACKETS[onuNum]);
       //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
       //  TSprint("[%d] ACTIVE -> IDLE\n", onuNum); 
@@ -116,30 +118,39 @@ void journal(int onuNum)
 
 void heavy_traffic(int onuNum)
 {
+  double timeUntilONUsNextPacket = 0;
+  double timeForWholeQueue = 0; 
   switch(onuAttrs[onuNum].state)
   {
     case ONU_ST_ACTIVE:
-      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-      //{
-      //  TSprint("[%d] ACTIVE was entered\n", onuNum); 
-      //}
-      // This is performed in assign_packet in the traffic.c file
+      // Calculate the potential sleep time for this ONU
+      timeUntilONUsNextPacket = onuAttrs[onuNum].queuesize * simParams.TIME_PER_BYTE;
+      timeForWholeQueue = oltAttrs.packetQueueSize * simParams.TIME_PER_BYTE;
+      onuAttrs[onuNum].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+      // If sleep time is > 0, sleep. (The sleep time can be less than zero since
+      // the WAKEUP time is subtracted from the queue time)
+      if(onuAttrs[onuNum].heavy_traffic_sleep_duration >= 0)
+      {
+        // Only use the PDHprint command with short simulations
+        // Otherwise, huge files can be generated
+        if(simParams.simType == ACTUAL_RUN)
+          PDHprint("ONU %d, Load %0.1f, Sleep Duration %e, Queue Depth %e\n", onuNum, simParams.DESIRED_LOAD, timeUntilONUsNextPacket, timeForWholeQueue); 
+      
+        // Only use the PDHprint command with short simulations
+        // Otherwise, huge files can be generated
+        //if(simParams.simType == ACTUAL_RUN)
+        //  PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
+        set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
+      }
+
       wait(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
       changeState(onuNum, ONU_ST_SLEEP);
       break;
     case ONU_ST_SLEEP:
-      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-      //{
-      //  TSprint("[%d] SLEEP was entered\n", onuNum); 
-      //}
       hold(onuAttrs[onuNum].heavy_traffic_sleep_duration);
       changeState(onuNum, ONU_ST_WAKEUP);
       break;
     case ONU_ST_WAKEUP:
-      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-      //{
-      //  TSprint("[%d] WAKEUP was entered\n", onuNum); 
-      //}
       hold(simParams.ONU_TIME_WAKEUP);
       // Clear the "sleep due to heavy traffic flag" 
       // so that it won't matter if it was set during
@@ -148,18 +159,10 @@ void heavy_traffic(int onuNum)
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case ONU_ST_IDLE:
-      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-      //{
-      //  TSprint("[%d] IDLE was entered\n", onuNum); 
-      //}
       // In this alrogithm, the IDLE state should never be used
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
     case ONU_ST_PROBE:
-      //if(table_cnt(overallQueueDelay) < BOBB && onuNum == 0)
-      //{
-      //  TSprint("[%d] PROBE was entered\n", onuNum); 
-      //}
       // In this alrogithm, the PROBE state should never be used
       changeState(onuNum, ONU_ST_ACTIVE);
       break;
