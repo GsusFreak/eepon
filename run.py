@@ -12,8 +12,8 @@ from glob import glob
 #lowerBound = 250
 #increment = 50
 #paramList1 = [*range(lowerBound, upperBound+1, increment)]
-paramPrecision = 3
-#paramList1 = [x * 0.001 for x in range(1,11)]
+paramPrecision = 6
+#paramList1 = [x * 0.00001 for x in range(0,14)]
 #paramList1 = [x * 200 for x in range(1,11)]
 #paramList1 = [x for x in range(1,21)]
 #paramList1 = [x for x in range(1,3)]

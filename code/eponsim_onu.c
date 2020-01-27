@@ -118,40 +118,40 @@ void journal(int onuNum)
 
 void heavy_traffic(int onuNum)
 {
-  double timeUntilONUsNextPacket = 0;
-  double timeForWholeQueue = 0; 
   switch(onuAttrs[onuNum].state)
   {
     case ONU_ST_ACTIVE:
       // Calculate the potential sleep time for this ONU
-      timeUntilONUsNextPacket = onuAttrs[onuNum].queuesize * simParams.TIME_PER_BYTE;
-      timeForWholeQueue = oltAttrs.packetQueueSize * simParams.TIME_PER_BYTE;
-      onuAttrs[onuNum].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+      onuAttrs[onuNum].heavy_traffic_sleep_duration = ((double)onuAttrs[onuNum].queuesize * simParams.TIME_PER_BYTE) - simParams.ONU_TIME_WAKEUP;
+
       // If sleep time is > 0, sleep. (The sleep time can be less than zero since
       // the WAKEUP time is subtracted from the queue time)
-      if(onuAttrs[onuNum].heavy_traffic_sleep_duration >= 0)
+      if(onuAttrs[onuNum].heavy_traffic_sleep_duration > 0)
       {
-        // Only use the PDHprint command with short simulations
-        // Otherwise, huge files can be generated
-        if(simParams.simType == ACTUAL_RUN)
-          PDHprint("ONU %d, Load %0.1f, Sleep Duration %e, Queue Depth %e\n", onuNum, simParams.DESIRED_LOAD, timeUntilONUsNextPacket, timeForWholeQueue); 
-      
         // Only use the PDHprint command with short simulations
         // Otherwise, huge files can be generated
         //if(simParams.simType == ACTUAL_RUN)
         //  PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
-        set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
+        //set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
       }
 
       wait(HEAVY_TRAFFIC_SLEEP_TRIGGERED[onuNum]);
+      
+      // Record the projected sleep times used so that they can be debuged 
+      // if they don't work at the OLT
+      onuAttrs[onuNum].last_sleep_time_short = onuAttrs[onuNum].queuesize * simParams.TIME_PER_BYTE;
+      onuAttrs[onuNum].last_sleep_time_long = get_queue_size_until_certain_ONU(onuNum) * simParams.TIME_PER_BYTE;
+      onuAttrs[onuNum].start_of_sleep = simtime();
+
       changeState(onuNum, ONU_ST_SLEEP);
       break;
     case ONU_ST_SLEEP:
-      hold(onuAttrs[onuNum].heavy_traffic_sleep_duration);
+      hold(0.99*(onuAttrs[onuNum].heavy_traffic_sleep_duration));
       changeState(onuNum, ONU_ST_WAKEUP);
       break;
     case ONU_ST_WAKEUP:
       hold(simParams.ONU_TIME_WAKEUP);
+
       // Clear the "sleep due to heavy traffic flag" 
       // so that it won't matter if it was set during
       // the sleeping period
@@ -182,13 +182,6 @@ void onu(int onuNum)
   
   //int   NumGrantsToWait = 0;
 
-  //typedef enum {SLEEP_SCHEDULER_JOURNAL, SLEEP_SCHEDULER_HEAVY_TRAFFIC, SLEEP_SCHEDULER_HEAVY_TRAFFIC_HYBRID} eSLEEP_SCHEDULER;
-  //typedef enum {ONU_ST_ACTIVE, ONU_ST_IDLE, ONU_ST_SLEEP, ONU_ST_PROBE, FINAL_eONU_STATE_ENTRY} eONU_STATE;
-  //simParams.ONU_TIME_SLEEP   = 0.005;
-  //simParams.ONU_TIME_TRIGGER = 0.0001;
-  //simParams.ONU_TIME_WAKEUP  = 0.001;
-  //simParams.ONU_TIME_PROBE   = 0.00025;
-  
   /* Permanent OLT behavior */
   while(!terminateSim)
   {

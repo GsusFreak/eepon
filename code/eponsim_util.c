@@ -321,6 +321,29 @@ int get_ONU_queue_size(int onuNum)
 }
 
 
+int is_ONU_in_queue(int onuNum)
+{
+  if(onuNum > simParams.NUM_ONU || onuNum < 0)
+  {
+    TSprint("ERROR: onuNum = %d was passed to is_ONU_in_queue", onuNum);
+    dump_sim_core();
+  }
+  sENTITY_PKT *tmp;
+  int result = 0;
+  tmp = oltAttrs.packetsHead;
+  while(tmp != NULL)
+  {
+    if(tmp->onuNum == onuNum) 
+    {
+      result = 1;
+      break;
+    }
+    tmp = tmp->next;
+  }
+  return result;
+}
+
+
 int get_queue_size_until_certain_ONU(int onuNum)
 {
   if(onuNum > simParams.NUM_ONU || onuNum < 0)

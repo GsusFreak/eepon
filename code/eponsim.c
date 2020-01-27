@@ -201,14 +201,18 @@ void test_var_print()
         fprintf(indicatorFile, "\n");
       }
       for (icc = 0; icc < simParams.NUM_ONU; icc++) {
-        fprintf(indicatorFile, "ONU  #%02d: ", icc+1);
+        fprintf(indicatorFile, "ONU  #%02d: ", icc);
         fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created[iaa][ibb][icc]);
         fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed[iaa][ibb][icc]);
+        fprintf(indicatorFile, "          onu_not_servicable_cnt [pilot] = %.0f\n", test_vars.onu_not_servicable_cnt[iaa][ibb][icc][0]);
+        fprintf(indicatorFile, "          onu_not_servicable_cnt [actual] = %.0f\n", test_vars.onu_not_servicable_cnt[iaa][ibb][icc][1]);
         fprintf(indicatorFile, "\n");
       }
       fprintf(indicatorFile, "OLT:      ");
       fprintf(indicatorFile, "data_pkt_created   = %.0f\n", test_vars.data_pkt_created_olt[iaa][ibb]);
       fprintf(indicatorFile, "          data_pkt_destroyed = %.0f\n", test_vars.data_pkt_destroyed_olt[iaa][ibb]);
+      fprintf(indicatorFile, "          olt_cycle_cnt [pilot] = %.0f\n", test_vars.olt_cycle_cnt[iaa][ibb][0]);
+      fprintf(indicatorFile, "          olt_cycle_cnt [actual] = %.0f\n", test_vars.olt_cycle_cnt[iaa][ibb][1]);
       fprintf(indicatorFile, "sim_time = %.0f\n", test_vars.sim_time_per_load[iaa][ibb]);
       fprintf(indicatorFile, "\n");
       ibb++;
@@ -231,12 +235,15 @@ void test_var_print()
   
   fflush(indicatorFile);
   fclose(indicatorFile);
-  
+ 
 #endif
   return;
 }
 
 // Initialize Test Variables
+//#define MAX_ONU      64
+//#define MAX_NUM_RUN  40
+//#define MAX_NUM_LOAD 4
 void test_var_init()
 {
 #ifdef EnableTroubleshooting_v1
@@ -246,9 +253,9 @@ void test_var_init()
   test_vars.read_sim_cfg_file_finish = 0;
   test_vars.heartbeat_process = 0;
   int iaa; // Once for each run
-  for (iaa = 0; iaa < 10; iaa++) {
+  for (iaa = 0; iaa < MAX_NUM_RUN; iaa++) {
     int ibb; // Once for each load level
-    for (ibb = 0; ibb < 20; ibb++) {
+    for (ibb = 0; MAX_NUM_LOAD < 20; ibb++) {
       test_vars.sim_time_per_load[iaa][ibb] = 0;
       test_vars.sim_time_per_load_start[iaa][ibb] = 0;
       test_vars.main_begin_load[iaa][ibb] = 0;
@@ -257,9 +264,11 @@ void test_var_init()
       test_vars.data_pkt_created_olt[iaa][ibb] = 0;
       test_vars.data_pkt_destroyed_olt[iaa][ibb] = 0;
       int icc; // Once for each ONU
-      for (icc = 0; icc < 64; icc++)
+      for (icc = 0; icc < MAX_ONU; icc++)
         test_vars.data_pkt_created[iaa][ibb][icc] = 0;
         test_vars.data_pkt_destroyed[iaa][ibb][icc] = 0;
+        test_vars.onu_not_servicable_cnt[iaa][ibb][icc][0] = 0;
+        test_vars.onu_not_servicable_cnt[iaa][ibb][icc][1] = 0;
       for (icc = 0; icc < 2; icc++) {
         test_vars.sim_start[iaa][ibb][icc] = 0;
         test_vars.sim_process[iaa][ibb][icc] = 0;
@@ -267,6 +276,7 @@ void test_var_init()
         test_vars.sim_finish2[iaa][ibb][icc] = 0;
         test_vars.sim_before_ONU_processes[iaa][ibb][icc] = 0;
         test_vars.sim_ctrl_simType[iaa][ibb][icc] = 0;
+        test_vars.olt_cycle_cnt[iaa][ibb][icc] = 0;
       }
     }
   }
@@ -438,10 +448,14 @@ void init_data_structures()
   {
     onuAttrs[i].latency = 0;
     onuAttrs[i].transmitByteCnt = 0;
-    onuAttrs[i].state = ONU_ST_IDLE;
+    onuAttrs[i].state = ONU_ST_ACTIVE;
     onuAttrs[i].timeStateStarted = simtime();
     onuAttrs[i].queuesize = 0;
     onuAttrs[i].disableQueueTracking = 0;
+    onuAttrs[i].last_sleep_time_short = 0;
+    onuAttrs[i].last_sleep_time_long = 0;
+    onuAttrs[i].start_of_sleep = 0;
+    onuAttrs[i].src_sleep = 3;
     for(int ibb=0; ibb < FINAL_eONU_STATE_ENTRY; ibb++)
       onuAttrs[i].timeInState[ibb] = 0;
   }
@@ -2097,7 +2111,8 @@ int main()
           onuAttrs[iaa].timeInState[ibb] = 0;
           onuAttrs[iaa].cntState[ibb] = 0; 
         }
-        onuAttrs[iaa].state = ONU_ST_IDLE;
+        onuAttrs[iaa].state = ONU_ST_ACTIVE;
+        onuAttrs[iaa].src_sleep = 3;
         onuAttrs[iaa].timeStateStarted = simtime();
       }
 

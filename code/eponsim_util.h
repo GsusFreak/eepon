@@ -33,6 +33,7 @@ void remove_all_packets();
 int get_OLT_queue_size();
 int get_ONU_queue_size(int onuNum);
 int get_queue_size_until_certain_ONU(int onuNum);
+int is_ONU_in_queue(int onuNum);
 
 
 void grantCycle();

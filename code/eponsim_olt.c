@@ -146,35 +146,66 @@ void olt()
           // of the packets that arrived after the packet that 
           // was just serviced have been counted
           onuAttrs[currPktONUNum].queuesize = get_queue_size_until_certain_ONU(currPktONUNum);
+          onuAttrs[currPktONUNum].disableQueueTracking = is_ONU_in_queue(currPktONUNum);
 
           // Calculate the potential sleep time for this ONU
-          double timeUntilONUsNextPacket = onuAttrs[currPktONUNum].queuesize * simParams.TIME_PER_BYTE;
-          double timeForWholeQueue = oltAttrs.packetQueueSize * simParams.TIME_PER_BYTE;
-          onuAttrs[currPktONUNum].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+          onuAttrs[currPktONUNum].heavy_traffic_sleep_duration = ((double)onuAttrs[currPktONUNum].queuesize * simParams.TIME_PER_BYTE) - simParams.ONU_TIME_WAKEUP;
+          
           // If sleep time is > 0, sleep. (The sleep time can be less than zero since
           // the WAKEUP time is subtracted from the queue time)
-
-          if(onuAttrs[currPktONUNum].heavy_traffic_sleep_duration >= 0)
+          if(onuAttrs[currPktONUNum].heavy_traffic_sleep_duration > 0)
           {
-            // Only use the PDHprint command with short simulations
-            // Otherwise, huge files can be generated
-            if(simParams.simType == ACTUAL_RUN)
-            //if(timeUntilONUsNextPacket > simParams.ONU_TIME_WAKEUP && simParams.simType == ACTUAL_RUN && table_cnt(overallQueueDelay) <= 10000)
-              PDHprint("ONU %d, Load %0.1f, Sleep Duration %e, Queue Depth %e\n", currPktONUNum, simParams.DESIRED_LOAD, timeUntilONUsNextPacket, timeForWholeQueue); 
-          
-            // Only use the PDHprint command with short simulations
-            // Otherwise, huge files can be generated
-            //if(simParams.simType == ACTUAL_RUN)
-            //  PDHprint("%0.1f, %e\n", simParams.DESIRED_LOAD, onuAttrs[pkt->onuNum].heavy_traffic_sleep_duration);
+            onuAttrs[currPktONUNum].src_sleep = 0;
             set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[currPktONUNum]);
+          }
+
+
+
+          // Check if any of the other ONUs can sleep
+          for (int iaa = 0; iaa < simParams.NUM_ONU; iaa++) 
+          {
+            if(onuAttrs[iaa].state == ONU_ST_ACTIVE && onuAttrs[iaa].disableQueueTracking == 0)
+            {
+              // Calculate the potential sleep time for this ONU
+              onuAttrs[iaa].heavy_traffic_sleep_duration = ((double)onuAttrs[iaa].queuesize * simParams.TIME_PER_BYTE) - simParams.ONU_TIME_WAKEUP;
+              // If sleep time is > 0, sleep. (The sleep time can be less than zero since
+              // the WAKEUP time is subtracted from the queue time)
+
+              if(onuAttrs[iaa].heavy_traffic_sleep_duration > 0)
+              {
+                onuAttrs[iaa].src_sleep = 2;
+                set(HEAVY_TRAFFIC_SLEEP_TRIGGERED[iaa]);
+              }
+            }
           }
         }
         else
         {
+          if(simParams.simType == PILOT_RUN)
+          {
+            test_vars.onu_not_servicable_cnt[test_vars.runNum][test_vars.loadOrderCounter][currPkt->onuNum][0]++;
+            if(test_vars.onu_not_servicable_cnt[test_vars.runNum][test_vars.loadOrderCounter][currPkt->onuNum][0] <= 1000)
+              PDHprint("ONU #%d, src %d, Short Calc %.3e, Long Calc %.3e, Sleep Dur %.3e, Actual Time %.3e\n", currPkt->onuNum, onuAttrs[currPkt->onuNum].src_sleep, onuAttrs[currPkt->onuNum].last_sleep_time_short, onuAttrs[currPkt->onuNum].last_sleep_time_long, onuAttrs[currPkt->onuNum].heavy_traffic_sleep_duration, simtime()-onuAttrs[currPkt->onuNum].start_of_sleep);
+          }
+          if(simParams.simType == ACTUAL_RUN)
+          {
+            test_vars.onu_not_servicable_cnt[test_vars.runNum][test_vars.loadOrderCounter][currPkt->onuNum][1]++;
+            if(test_vars.onu_not_servicable_cnt[test_vars.runNum][test_vars.loadOrderCounter][currPkt->onuNum][1] <= 1000)
+              PDHprint("ONU #%d, src %d, Short Calc %.3e, Long Calc %.3e, Sleep Dur %.3e, Actual Time %.3e\n", currPkt->onuNum, onuAttrs[currPkt->onuNum].src_sleep, onuAttrs[currPkt->onuNum].last_sleep_time_short, onuAttrs[currPkt->onuNum].last_sleep_time_long, onuAttrs[currPkt->onuNum].heavy_traffic_sleep_duration, simtime()-onuAttrs[currPkt->onuNum].start_of_sleep);
+          }
+          // Once a certain number of packets miss their mark, turn off the sim to prevent creating massive files
+
           currPkt = currPkt->next; 
         }
       }
     }
+
+    // Record the number of complete cycles the OLT goes through
+    if(simParams.simType == PILOT_RUN)
+      test_vars.olt_cycle_cnt[test_vars.runNum][test_vars.loadOrderCounter][0]++;
+    if(simParams.simType == ACTUAL_RUN)
+      test_vars.olt_cycle_cnt[test_vars.runNum][test_vars.loadOrderCounter][1]++;
+
     //if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
     //  TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 1\n", iaa); 
     //set(ONU_HAS_NO_QUEUED_PACKETS[iaa]);

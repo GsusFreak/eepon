@@ -52,7 +52,7 @@ double      maximumGrantCycle;
 
 #define MAX_ONU      64
 #define MAX_NUM_RUN  40
-#define MAX_NUM_LOAD 4
+#define MAX_NUM_LOAD 20
 
 /* Maximum size of trace capability */
 #define MAX_TRACE_VALUES    1500
@@ -274,6 +274,14 @@ typedef struct
   double      timeStateStarted;
   int         cntState[FINAL_eONU_STATE_ENTRY]; 
   double      heavy_traffic_sleep_duration;
+
+  double      last_sleep_time_short;
+  double      last_sleep_time_long;
+  double      start_of_sleep;
+  // To help debug which sleep trigger is giving the wrong
+  // sleep durations
+  // 0 => olt.c; 1 => traffic.; 3 => initialized value (no meaning)
+  int         src_sleep;
   
   int         queuesize;
   int         disableQueueTracking;
@@ -475,7 +483,9 @@ typedef struct
           data_pkt_created[MAX_NUM_RUN][MAX_NUM_LOAD][MAX_ONU],
           data_pkt_destroyed[MAX_NUM_RUN][MAX_NUM_LOAD][MAX_ONU],
           data_pkt_created_olt[MAX_NUM_RUN][MAX_NUM_LOAD],
-          data_pkt_destroyed_olt[MAX_NUM_RUN][MAX_NUM_LOAD];
+          data_pkt_destroyed_olt[MAX_NUM_RUN][MAX_NUM_LOAD],
+          olt_cycle_cnt[MAX_NUM_RUN][MAX_NUM_LOAD][2],
+          onu_not_servicable_cnt[MAX_NUM_RUN][MAX_NUM_LOAD][MAX_ONU][2];
   int     loadOrderCounter,
           runNum;
 } sIndicators;
