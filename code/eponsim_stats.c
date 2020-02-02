@@ -29,7 +29,7 @@ void record_packet_stats_dequeue(sENTITY_PKT *pkt)
   record(pkt->transmissionTime - pkt->creationTime, oltAttrs.queueTimeTable);
   /* Record packet queue time in overall queueing delay table */
   record(pkt->transmissionTime - pkt->creationTime, overallQueueDelay);
-  //record(pkt->transmissionTime - pkt->creationTime, ONUQueueDelay[pkt->onuNum]);
+  record(pkt->transmissionTime - pkt->creationTime, ONUQueueDelay[pkt->onuNum]);
   if(pkt->onuNum < simParams.NUM_HEAVY_ONU)
   {
     /* Record packet queue time in Heavy ONU queueing delay table */
@@ -78,7 +78,7 @@ void record_stats_queue_length(sENTITY_PKT *pkt)
   /* Record queue length in proper table */
   record(oltAttrs.packetQueueSize, oltAttrs.queueLengthTable);
   record(oltAttrs.packetQueueSize, overallQueueLength);
-  //record(oltAttrs.packetQueueSize, ONUQueueLength[pkt->onuNum]);
+  record(oltAttrs.packetQueueSize, ONUQueueLength[pkt->onuNum]);
   if(pkt->onuNum < simParams.NUM_HEAVY_ONU)
   {
     record(oltAttrs.packetQueueSize, heavyQueueLength);

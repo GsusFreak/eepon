@@ -206,6 +206,14 @@ void olt()
     if(simParams.simType == ACTUAL_RUN)
       test_vars.olt_cycle_cnt[test_vars.runNum][test_vars.loadOrderCounter][1]++;
 
+    // If an error is detected, recalculate the queue depths and re-set the
+    // flag for when a ONU already has a packet in the queue
+    for (int iaa = 0; iaa < simParams.NUM_ONU; iaa++) 
+    {
+      onuAttrs[iaa].queuesize = get_queue_size_until_certain_ONU(iaa);
+      onuAttrs[iaa].disableQueueTracking = is_ONU_in_queue(iaa);
+    }
+
     //if(table_cnt(overallQueueDelay) < BOBB && iaa == 0)
     //  TSprint("[%d] ONU_HAS_NO_QUEUED_PACKETS -> 1\n", iaa); 
     //set(ONU_HAS_NO_QUEUED_PACKETS[iaa]);
