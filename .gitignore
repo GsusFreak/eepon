@@ -3,6 +3,10 @@
 # Ignore certain folders
 /Traces/*
 
+# Ignore the config.ini file so that you can
+# run sims on multiple computers
+config.ini
+
 # Specific file types to ignore
 *.pyc
 *.o
