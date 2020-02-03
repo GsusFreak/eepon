@@ -384,33 +384,33 @@ extern long     EMPIRICAL_ALIAS[5];
 
 /* CSIM Data Collection Variables */
 extern TABLE    overallQueueDelay;
-extern TABLE    ONUQueueDelay[MAX_ONU];
+//extern TABLE    ONUQueueDelay[MAX_ONU];
 extern TABLE    cycleQueueDelay;
 extern TABLE    heavyQueueDelay;
 extern TABLE    lightQueueDelay;
 
 extern TABLE    overallQueueLength;
-extern TABLE    ONUQueueLength[MAX_ONU];
+//extern TABLE    ONUQueueLength[MAX_ONU];
 extern TABLE    heavyQueueLength;
 extern TABLE    lightQueueLength;
 
 extern sSTAT_EST  overallQueueDelayEst;
-extern sSTAT_EST  ONUQueueDelayEst[MAX_ONU];
+//extern sSTAT_EST  ONUQueueDelayEst[MAX_ONU];
 extern sSTAT_EST  heavyQueueDelayEst;
 extern sSTAT_EST  lightQueueDelayEst;
 
 extern sSTAT_EST  overallQueueLengthEst;
-extern sSTAT_EST  ONUQueueLengthEst[MAX_ONU];
+//extern sSTAT_EST  ONUQueueLengthEst[MAX_ONU];
 extern sSTAT_EST  heavyQueueLengthEst;
 extern sSTAT_EST  lightQueueLengthEst;
 
 extern sSS_STAT   overallQueueDelayStat;
-extern sSS_STAT   ONUQueueDelayStat[MAX_ONU];
+//extern sSS_STAT   ONUQueueDelayStat[MAX_ONU];
 extern sSS_STAT   heavyQueueDelayStat;
 extern sSS_STAT   lightQueueDelayStat;
 
 extern sSS_STAT   overallQueueLengthStat;
-extern sSS_STAT   ONUQueueLengthStat[MAX_ONU];
+//extern sSS_STAT   ONUQueueLengthStat[MAX_ONU];
 extern sSS_STAT   heavyQueueLengthStat;
 extern sSS_STAT   lightQueueLengthStat;
 
