@@ -70,7 +70,7 @@ void assign_packet(sENTITY_PKT *pkt)
     //    // Calculate the potential sleep time for this ONU
     //    double timeUntilONUsNextPacket = onuAttrs[iaa].queuesize * simParams.TIME_PER_BYTE;
     //    double timeForWholeQueue = oltAttrs.packetQueueSize * simParams.TIME_PER_BYTE;
-    //    onuAttrs[iaa].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - simParams.ONU_TIME_WAKEUP;
+    //    onuAttrs[iaa].heavy_traffic_sleep_duration = timeUntilONUsNextPacket - (simParams.ONU_TIME_WAKEUP * 1.01);
     //    // If sleep time is > 0, sleep. (The sleep time can be less than zero since
     //    // the WAKEUP time is subtracted from the queue time)
 

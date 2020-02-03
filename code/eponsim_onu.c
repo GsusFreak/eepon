@@ -122,7 +122,7 @@ void heavy_traffic(int onuNum)
   {
     case ONU_ST_ACTIVE:
       // Calculate the potential sleep time for this ONU
-      onuAttrs[onuNum].heavy_traffic_sleep_duration = ((double)onuAttrs[onuNum].queuesize * simParams.TIME_PER_BYTE) - simParams.ONU_TIME_WAKEUP;
+      onuAttrs[onuNum].heavy_traffic_sleep_duration = ((double)onuAttrs[onuNum].queuesize * simParams.TIME_PER_BYTE) - (simParams.ONU_TIME_WAKEUP * 1.01);
 
       // If sleep time is > 0, sleep. (The sleep time can be less than zero since
       // the WAKEUP time is subtracted from the queue time)
@@ -146,7 +146,7 @@ void heavy_traffic(int onuNum)
       changeState(onuNum, ONU_ST_SLEEP);
       break;
     case ONU_ST_SLEEP:
-      hold(0.99*(onuAttrs[onuNum].heavy_traffic_sleep_duration));
+      hold(onuAttrs[onuNum].heavy_traffic_sleep_duration);
       changeState(onuNum, ONU_ST_WAKEUP);
       break;
     case ONU_ST_WAKEUP:

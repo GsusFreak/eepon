@@ -104,9 +104,6 @@ double currScheduleTime[20];
 double currScheduleTimeMax;
 double clockTime1, clockTime2;
 
-/* Array of weights for changing the traffic loads between ONUs */
-//int ONUTrafficScalar[MAX_ONU];
-
 /* This array is used for ordering ONUs for scheduling in LFJ order or in wavelength assignment order */
 sONU_LIST *scheduleList;
 
@@ -365,12 +362,12 @@ void calc_sim_params()
   simParams.TIME_PER_BYTE = (8)/simParams.LINK_SPEED; /* at 1 Mbps link speed, byte time is 8 microseconds */
   simParams.PREAMBLE_IPG_TIME = PREAMBLE_IPG_BYTES*simParams.TIME_PER_BYTE;
 
-  int total_weight = 0;
+  double total_weight = 0;
   for(int iaa = 0; iaa < simParams.ONUTrafficScalar_length; iaa++)
   {
     total_weight = total_weight + simParams.ONUTrafficScalar[iaa];
   }
-  TSprint("total weight of ONU traffic scalar = %d\n", total_weight);
+  TSprint("total weight of ONU traffic scalar = %f\n", total_weight);
   for(int iaa = 0; iaa < simParams.ONUTrafficScalar_length; iaa++)
   {
     //simParams.NUM_PARTS = (simParams.NUM_ONU - simParams.NUM_HEAVY_ONU) + (simParams.NUM_HEAVY_ONU*simParams.HEAVY_LOAD);
@@ -379,7 +376,7 @@ void calc_sim_params()
     //TSprint("scalar = %d\ntotal_weight = %d\nlink speed = %d\n", simParams.ONUTrafficScalar[iaa], total_weight, simParams.LINK_SPEED);
     simParams.ONUTrafficScalar_link_speed[iaa] = (double)(simParams.LINK_SPEED*simParams.DESIRED_LOAD) * simParams.ONUTrafficScalar[iaa] / (double)total_weight;  /* in bps */
     simParams.AVG_PKT_INTER_ARVL_TIME_ONU[iaa] = (double)((AVG_PKT_SIZE+PREAMBLE_IPG_BYTES)*8)/simParams.ONUTrafficScalar_link_speed[iaa];
-    //TSprint("ONU_link_speed[%d] = %e\n", iaa, simParams.ONUTrafficScalar_link_speed[iaa]); 
+    TSprint("ONU_link_speed[%d] = %e\n", iaa, simParams.ONUTrafficScalar_link_speed[iaa]); 
     //TSprint("avg_pkt_inter_arvl_time[%d] = %e\n", iaa, simParams.AVG_PKT_INTER_ARVL_TIME_ONU[iaa]); 
   }
 
@@ -1123,7 +1120,7 @@ void read_sim_cfg_file()
   
   FILE *cfgFile;
   char currToken[200];
-  int  currTokenInt;
+  double  currTokenInt;
   simParams.ONUTrafficScalar_length = 0;
 
   /* set defaults */
@@ -1215,10 +1212,11 @@ void read_sim_cfg_file()
       }
       else if(strcmp(currToken, "ONU_TRAFFIC_SCALAR") == 0)
       {
-        while((fscanf(cfgFile, "%d", &currTokenInt)) != 0)
+        // Please note: currTokenInt is actually a double
+        while((fscanf(cfgFile, "%lf", &currTokenInt)) != 0)
         {
           simParams.ONUTrafficScalar[simParams.ONUTrafficScalar_length] = currTokenInt;
-          TSprint("onu_traffic_scalar[%d] = %d\n", simParams.ONUTrafficScalar_length, simParams.ONUTrafficScalar[simParams.ONUTrafficScalar_length]);
+          TSprint("onu_traffic_scalar[%d] = %f\n", simParams.ONUTrafficScalar_length, simParams.ONUTrafficScalar[simParams.ONUTrafficScalar_length]);
           simParams.ONUTrafficScalar_length = simParams.ONUTrafficScalar_length + 1;
         }
         TSprint("onu_traffic_scalar LENGTH = %d\n", simParams.ONUTrafficScalar_length);
@@ -1496,6 +1494,7 @@ void write_sim_data(int runNumber, double trafficLoad)
   FILE *pdFile, *plFile, *clpFile;
   FILE *pcFile2, *tpcFile2, *ppcFile2, *cpcFile2;
   FILE *cpcFile[MAX_ONU], *pcFile[MAX_ONU], *ppcFile[MAX_ONU], *tpcFile[MAX_ONU], *odFile[MAX_ONU], *odsFile[MAX_ONU];
+  FILE *cooFile;
 
   /* Determine file names */
   //filename_suffix[0] = '\0';
@@ -1628,6 +1627,9 @@ void write_sim_data(int runNumber, double trafficLoad)
   filename_str[0] = '\0';
   sprintf(filename_str, "clp.txt");
   clpFile = fopen(filename_str,"a");
+  filename_str[0] = '\0';
+  sprintf(filename_str, "coo.txt");
+  cooFile = fopen(filename_str,"a");
 
   double_str[0] = '\0';
   sprintf(double_str, "%g", trafficLoad);
@@ -1932,6 +1934,21 @@ void write_sim_data(int runNumber, double trafficLoad)
   fprintf(statsFile, "od_hist  (num=%lu,total=%lu,low=%e,high=%e)\n",table_histogram_num(overallQueueDelay),table_histogram_total(overallQueueDelay),table_histogram_low(overallQueueDelay),table_histogram_high(overallQueueDelay));
 
   fprintf(statsFile, "\n\n");
+
+  // Record the number of times the ONU was sleeping (Count ONU Overshoot)
+  int ONUcount = 0;
+  for (int iaa = 0; iaa < simParams.NUM_RUNS; iaa++) {
+    int ibb = 0;
+    for (double loadLevel = simParams.START_LOAD; loadLevel <= (simParams.END_LOAD + 0.0001); loadLevel += simParams.LOAD_INCR) {
+      for(int loopIndex=0; loopIndex < simParams.NUM_ONU; loopIndex++)
+      {
+        ONUcount += test_vars.onu_not_servicable_cnt[iaa][ibb][loopIndex][0];
+        ONUcount += test_vars.onu_not_servicable_cnt[iaa][ibb][loopIndex][1];
+      }
+      ibb++;
+    }
+  }
+  fprintf(cooFile, "%f %d\n", trafficLoad, ONUcount);
 
   fclose(odoFile);
   fclose(odFile2);

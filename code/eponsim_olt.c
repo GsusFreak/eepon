@@ -149,7 +149,9 @@ void olt()
           onuAttrs[currPktONUNum].disableQueueTracking = is_ONU_in_queue(currPktONUNum);
 
           // Calculate the potential sleep time for this ONU
-          onuAttrs[currPktONUNum].heavy_traffic_sleep_duration = ((double)onuAttrs[currPktONUNum].queuesize * simParams.TIME_PER_BYTE) - simParams.ONU_TIME_WAKEUP;
+          // Please note that the wakeup time is multiplied by 1.01 to allow for a minimum sleep duration of .01 wakeup time
+          // This ensures that the ONU wakesup before the OLT starts
+          onuAttrs[currPktONUNum].heavy_traffic_sleep_duration = ((double)onuAttrs[currPktONUNum].queuesize * simParams.TIME_PER_BYTE) - (simParams.ONU_TIME_WAKEUP * 1.01);
           
           // If sleep time is > 0, sleep. (The sleep time can be less than zero since
           // the WAKEUP time is subtracted from the queue time)
@@ -167,7 +169,7 @@ void olt()
             if(onuAttrs[iaa].state == ONU_ST_ACTIVE && onuAttrs[iaa].disableQueueTracking == 0)
             {
               // Calculate the potential sleep time for this ONU
-              onuAttrs[iaa].heavy_traffic_sleep_duration = ((double)onuAttrs[iaa].queuesize * simParams.TIME_PER_BYTE) - simParams.ONU_TIME_WAKEUP;
+              onuAttrs[iaa].heavy_traffic_sleep_duration = ((double)onuAttrs[iaa].queuesize * simParams.TIME_PER_BYTE) - (simParams.ONU_TIME_WAKEUP * 1.01);
               // If sleep time is > 0, sleep. (The sleep time can be less than zero since
               // the WAKEUP time is subtracted from the queue time)
 
