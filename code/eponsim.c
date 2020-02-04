@@ -828,6 +828,12 @@ void sim_ctrl()
     }
   }
 
+  // Record the time that the ONUs spent in their final states
+  for(int iaa = 0; iaa < simParams.NUM_ONU; iaa++)
+  {
+    onuAttrs[iaa].timeInState[onuAttrs[iaa].state] += simtime() - onuAttrs[iaa].timeStateStarted;
+  }
+
   /* Simulation is completed, set SIM_END global event */
   set(SIM_END_EVENT);
 }
