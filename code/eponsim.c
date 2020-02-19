@@ -1428,6 +1428,11 @@ void read_sim_cfg_file()
   // NUM_ONU.  
   simParams.TIME_PER_GRANT   = simParams.ONU_TIME_PROBE/2.0/simParams.NUM_ONU;
   
+  simParams.WAKEUP_POWER_CONSUMPTION = (simParams.SLEEP_POWER_CONSUMPTION + simParams.ACTIVE_POWER_CONSUMPTION)/2.0;  
+  TSprint("Active Power: %f\n", simParams.ACTIVE_POWER_CONSUMPTION);
+  TSprint("Sleep Power: %f\n", simParams.SLEEP_POWER_CONSUMPTION);
+  TSprint("Wakeup Power: %f\n", simParams.WAKEUP_POWER_CONSUMPTION);
+
   // Test Variables read_sim_cfg_file_finish
   test_vars.read_sim_cfg_file_finish++;
   test_var_print();
