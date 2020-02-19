@@ -47,7 +47,7 @@ TABLE   throughputFairness;
 TABLE   overallQueueDelay;
 // dataQueueDelay is the same as overallQueueDelay except that
 // it only covers a single ONU
-//TABLE   ONUQueueDelay[MAX_ONU];
+TABLE   ONUQueueDelay[MAX_ONU];
 TABLE   cycleQueueDelay;
 TABLE   heavyQueueDelay;
 TABLE   lightQueueDelay;
@@ -594,11 +594,11 @@ void sim_cleanup()
   heavyQueueLength = NULL;
   lightQueueLength = NULL;
   throughputFairness = NULL;
-  //for(i=0; i < MAX_TRACE_VALUES; i++)
-  //{
-  //  ONUQueueDelay[i] = NULL;
-  //  ONUQueueLength[i] = NULL;
-  //}
+  for(i=0; i < MAX_ONU; i++)
+  {
+    ONUQueueDelay[i] = NULL;
+    //ONUQueueLength[i] = NULL;
+  }
 }
 
 
@@ -900,12 +900,12 @@ void sim()
   /* Initialize overall queueing delay table */
   overallQueueDelay = table("Overall_Queue_Delay");
   tempStr[0] = '\0'; 
-  //for(int i = 0; i < simParams.NUM_ONU; i++)
-  //{
-  //  tempStr[0] = '\0'; 
-  //  sprintf(tempStr, "ONU_%02d_Queue_Delay", i);
-  //  ONUQueueDelay[i] = table(tempStr);
-  //}
+  for(int i = 0; i < simParams.NUM_ONU; i++)
+  {
+    tempStr[0] = '\0'; 
+    sprintf(tempStr, "ONU_%02d_Queue_Delay", i);
+    ONUQueueDelay[i] = table(tempStr);
+  }
   
   if(simType == ACTUAL_RUN)
   {
@@ -924,17 +924,17 @@ void sim()
     //}
   }
   table_confidence(overallQueueDelay);
-  //for(int i = 0; i < simParams.NUM_ONU; i++)
-  //{
-  //  table_confidence(ONUQueueDelay[i]);
-  //}
+  for(int i = 0; i < simParams.NUM_ONU; i++)
+  {
+    table_confidence(ONUQueueDelay[i]);
+  }
   
   if (simParams.TRAFFIC_TYPE != TRAFFIC_SELF_SIMILAR) table_run_length(overallQueueDelay, 0.01, 0.95, 10000);
   else table_run_length(overallQueueDelay, 0.05, 0.90, 10000);
-  //for(int i = 0; i < simParams.NUM_ONU; i++)
-  //{
-  //  table_run_length(ONUQueueDelay[i], 0.01, 0.95, 10000);
-  //}
+  for(int i = 0; i < simParams.NUM_ONU; i++)
+  {
+    table_run_length(ONUQueueDelay[i], 0.01, 0.95, 10000);
+  }
   
   /* Initialize Heavy ONU queueing delay table */
   heavyQueueDelay = table("Heavy_ONU_Queue_Delay");
@@ -1870,10 +1870,10 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(odmnFile,"%f %e\n", trafficLoad, table_min(overallQueueDelay));
     fprintf(odmxFile,"%f %e\n", trafficLoad, table_max(overallQueueDelay));
     fprintf(odFile2,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueDelay), table_conf_lower(overallQueueDelay, 0.95), table_conf_upper(overallQueueDelay, 0.95), 0.95);
-    //for(int i = 0; i < simParams.NUM_ONU; i++)
-    //{
-    //  fprintf(odFile[i],"%f %e %e %e %f\n", trafficLoad, table_conf_mean(ONUQueueDelay[i]), table_conf_lower(ONUQueueDelay[i], 0.95), table_conf_upper(ONUQueueDelay[i], 0.95), 0.95);
-    //}
+    for(int i = 0; i < simParams.NUM_ONU; i++)
+    {
+      fprintf(odFile[i],"%f %e %e %e %f\n", trafficLoad, table_conf_mean(ONUQueueDelay[i]), table_conf_lower(ONUQueueDelay[i], 0.95), table_conf_upper(ONUQueueDelay[i], 0.95), 0.95);
+    }
     fprintf(hdFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyQueueDelay), table_conf_lower(heavyQueueDelay, 0.95), table_conf_upper(heavyQueueDelay, 0.95), 0.95);
     fprintf(ldFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightQueueDelay), table_conf_lower(lightQueueDelay, 0.95), table_conf_upper(lightQueueDelay, 0.95), 0.95);
     fprintf(olFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueLength), table_conf_lower(overallQueueLength, 0.95), table_conf_upper(overallQueueLength, 0.95), 0.95);
@@ -1897,10 +1897,10 @@ void write_sim_data(int runNumber, double trafficLoad)
     fprintf(odmnFile,"%f %e\n", trafficLoad, table_min(overallQueueDelay));
     fprintf(odmxFile,"%f %e\n", trafficLoad, table_max(overallQueueDelay));
     fprintf(odFile2,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(overallQueueDelay), table_conf_lower(overallQueueDelay, 0.90), table_conf_upper(overallQueueDelay, 0.90), 0.90);
-    //for(int i = 0; i < simParams.NUM_ONU; i++)
-    //{
-    //  fprintf(odFile[i],"%f %e %e %e %f\n", trafficLoad, table_conf_mean(ONUQueueDelay[i]), table_conf_lower(ONUQueueDelay[i], 0.90), table_conf_upper(ONUQueueDelay[i], 0.90), 0.90);
-    //}
+    for(int i = 0; i < simParams.NUM_ONU; i++)
+    {
+      fprintf(odFile[i],"%f %e %e %e %f\n", trafficLoad, table_conf_mean(ONUQueueDelay[i]), table_conf_lower(ONUQueueDelay[i], 0.90), table_conf_upper(ONUQueueDelay[i], 0.90), 0.90);
+    }
 
     fprintf(hdFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(heavyQueueDelay), table_conf_lower(heavyQueueDelay, 0.90), table_conf_upper(heavyQueueDelay, 0.90), 0.90);
     fprintf(ldFile,"%f %e %e %e %f\n", trafficLoad, table_conf_mean(lightQueueDelay), table_conf_lower(lightQueueDelay, 0.90), table_conf_upper(lightQueueDelay, 0.90), 0.90);

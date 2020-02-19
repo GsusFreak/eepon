@@ -384,7 +384,7 @@ extern long     EMPIRICAL_ALIAS[5];
 
 /* CSIM Data Collection Variables */
 extern TABLE    overallQueueDelay;
-//extern TABLE    ONUQueueDelay[MAX_ONU];
+extern TABLE    ONUQueueDelay[MAX_ONU];
 extern TABLE    cycleQueueDelay;
 extern TABLE    heavyQueueDelay;
 extern TABLE    lightQueueDelay;
