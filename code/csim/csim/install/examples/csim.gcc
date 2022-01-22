@@ -1,1 +1,0 @@
-gcc -I../lib $* ../lib/csim.a -lm

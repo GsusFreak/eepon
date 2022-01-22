@@ -1,6 +1,0 @@
-FILE QUARANTINED
-
-The original contents of this file have been replaced with
-this message because of its characteristics.
-File name: 'csim.tgz->Unknown->opt/csim/csim.tgz'
-Virus name: 'CorruptedCompressedFile'
